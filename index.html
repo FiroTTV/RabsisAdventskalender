@@ -85,7 +85,6 @@
             font-weight: bold;
         }
 
-        /* Goldene Verzierung für die Türchen */
         .door-front::before {
             content: '';
             position: absolute;
@@ -113,6 +112,7 @@
             color: #7f1d1d;
             border-color: #fef3c7;
         }
+        
         .door-24 .door-front::before {
             border-color: rgba(127, 29, 29, 0.5);
         }
@@ -120,43 +120,39 @@
         .modal-enter {
             animation: popIn 0.3s ease-out forwards;
         }
+        
         @keyframes popIn {
             0% { transform: scale(0.9); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* Custom Range Slider Styling */
         input[type=range] {
-            accent-color: #fbbf24; /* Tailwind yellow-400 */
+            accent-color: #fbbf24;
         }
     </style>
 </head>
 <body class="relative flex flex-col items-center justify-center p-4">
 
-    <!-- Audio Elemente (Echtes Weihnachtslied und Effekte) -->
+    <!-- Verlässliche MP3/WAV-Links von Wikimedia Commons / öffentlichen Archiven -->
     <audio id="bgMusic" loop>
-        <!-- Kevin MacLeod - Jingle Bells (Public Domain/CC) -->
-        <source src="https://upload.wikimedia.org/wikipedia/commons/1/15/Jingle_Bells_by_Kevin_MacLeod.ogg" type="audio/ogg">
+        <source src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Jingle_Bells_3.ogg" type="audio/ogg">
     </audio>
     <audio id="sfxSuccess">
-        <!-- Ein magisches weihnachtliches Klingeln -->
-        <source src="https://upload.wikimedia.org/wikipedia/commons/e/e5/Magical_Chime.ogg" type="audio/ogg">
+        <source src="https://upload.wikimedia.org/wikipedia/commons/b/b5/133003__kyster__bell-ding.wav" type="audio/wav">
     </audio>
     <audio id="sfxError">
-        <!-- Ein sanfter Error-Ton -->
         <source src="https://upload.wikimedia.org/wikipedia/commons/4/41/Error_beep.ogg" type="audio/ogg">
     </audio>
 
-    <!-- Audio Einstellungs-Menü oben rechts -->
     <div class="fixed top-4 right-4 z-50 flex flex-col items-end gap-2">
         <button id="settingsToggleBtn" onclick="toggleSettings()" class="bg-white/20 hover:bg-white/30 backdrop-blur-md border border-yellow-400/50 text-yellow-400 px-4 py-2 rounded-full font-bold shadow-lg transition-all cursor-pointer flex items-center gap-2">
-            ⚙️ <span class="hidden sm:inline">Audio</span>
+            ⚙️ <span class="hidden sm:inline">Menü</span>
         </button>
         
-        <div id="settingsPanel" class="hidden bg-black/60 backdrop-blur-lg border border-yellow-500/50 p-5 rounded-2xl shadow-2xl flex-col gap-4 text-sm text-yellow-100 min-w-[200px] modal-enter">
+        <div id="settingsPanel" class="hidden bg-black/80 backdrop-blur-xl border border-yellow-500/50 p-5 rounded-2xl shadow-2xl flex-col gap-4 text-sm text-yellow-100 min-w-[220px] modal-enter">
             <h3 class="font-bold text-yellow-400 border-b border-yellow-500/30 pb-2 mb-1">Einstellungen</h3>
             
-            <button id="musicToggleBtn" onclick="toggleMusic()" class="w-full bg-red-800 hover:bg-red-700 text-yellow-400 font-semibold py-2 px-4 rounded-lg transition-colors border border-yellow-400 shadow-sm flex justify-center items-center gap-2">
+            <button id="musicToggleBtn" onclick="toggleMusic()" class="w-full bg-green-700 hover:bg-green-600 text-yellow-400 font-semibold py-2 px-4 rounded-lg transition-colors border border-yellow-400 shadow-sm flex justify-center items-center gap-2">
                 ▶️ Musik abspielen
             </button>
 
@@ -168,6 +164,12 @@
             <div class="flex flex-col gap-1 mt-2">
                 <label for="sfxVol" class="flex justify-between">Effekte Lautstärke</label>
                 <input type="range" id="sfxVol" min="0" max="1" step="0.05" value="0.8" class="w-full cursor-pointer">
+            </div>
+            
+            <div class="border-t border-yellow-500/30 pt-4 mt-2">
+                <button onclick="resetProgress()" class="w-full bg-red-800 hover:bg-red-700 text-yellow-400 font-semibold py-2 px-4 rounded-lg transition-colors border border-yellow-400/50 shadow-sm flex justify-center items-center gap-2">
+                    🔄 Fortschritt zurücksetzen
+                </button>
             </div>
         </div>
     </div>
@@ -191,9 +193,8 @@
         <h1 class="title-font text-5xl md:text-7xl text-yellow-400 mb-2 drop-shadow-lg text-center">Rabsi's Adventskalender</h1>
         <p class="text-yellow-100 mb-10 text-center text-lg italic opacity-80">Jeden Tag eine kleine Überraschung für dich ❤️</p>
         
-        <!-- Grid für die 24 Türchen -->
         <div id="calendarGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 w-full px-2">
-            <!-- Türchen werden hier per JavaScript generiert -->
+            <!-- Türchen werden dynamisch geladen -->
         </div>
     </div>
 
@@ -224,10 +225,8 @@
     <script>
         const CALENDAR_YEAR = 2026;
         const CORRECT_PASSWORD = "Schneezauber#Rabsi2026!";
-        // WICHTIG: Status nur in dieser JS Variable speichern. Bei Neuladen ist sie wieder false!
-        let isAuthenticated = false;
+        let isAuthenticated = false; // Wird beim Reload immer false (Sicherheits-Feature)
         
-        // 24 süße Nachrichten für den Kalender
         const calendarMessages = {
             1: { emoji: "💌", text: "Du bist der wunderbarste Mensch in meinem Leben." },
             2: { emoji: "✨", text: "Dein Lächeln verzaubert jeden meiner Tage." },
@@ -255,13 +254,9 @@
             24: { emoji: "🎄❤️", text: "Frohe Weihnachten, mein geliebter Schatz! Ich liebe dich über alles." }
         };
 
-        // Ein gemischtes Layout für die Türchen, damit sie nicht langweilig 1-24 gereiht sind
         const doorLayout = [17, 4, 22, 9, 12, 1, 15, 8, 24, 5, 19, 2, 11, 7, 21, 14, 3, 20, 6, 18, 10, 23, 13, 16];
-
-        // Status der geöffneten Türchen im LocalStorage speichern
         let openedDoors = JSON.parse(localStorage.getItem('rabsi_opened_doors')) || [];
 
-        // Audio Setup & Lautstärke-Regelung
         const bgMusic = document.getElementById('bgMusic');
         const sfxSuccess = document.getElementById('sfxSuccess');
         const sfxError = document.getElementById('sfxError');
@@ -269,16 +264,11 @@
         const musicVolSlider = document.getElementById('musicVol');
         const sfxVolSlider = document.getElementById('sfxVol');
         
-        // Initial volumes setzen
         bgMusic.volume = musicVolSlider.value;
         sfxSuccess.volume = sfxVolSlider.value;
         sfxError.volume = sfxVolSlider.value;
 
-        // Event-Listener für Slider
-        musicVolSlider.addEventListener('input', (e) => {
-            bgMusic.volume = e.target.value;
-        });
-
+        musicVolSlider.addEventListener('input', (e) => bgMusic.volume = e.target.value);
         sfxVolSlider.addEventListener('input', (e) => {
             sfxSuccess.volume = e.target.value;
             sfxError.volume = e.target.value;
@@ -290,47 +280,62 @@
             panel.classList.toggle('flex');
         }
 
-        function toggleMusic() {
+        function updateMusicButtonUI(isPlaying) {
             const btn = document.getElementById('musicToggleBtn');
-            if (bgMusic.paused) {
-                bgMusic.play().catch(e => console.log("Audio Play verweigert:", e));
+            if (isPlaying) {
                 btn.innerHTML = '⏸️ Musik pausieren';
-                btn.classList.replace('bg-red-800', 'bg-green-700');
-                btn.classList.replace('hover:bg-red-700', 'hover:bg-green-600');
-            } else {
-                bgMusic.pause();
-                btn.innerHTML = '▶️ Musik abspielen';
                 btn.classList.replace('bg-green-700', 'bg-red-800');
                 btn.classList.replace('hover:bg-green-600', 'hover:bg-red-700');
+            } else {
+                btn.innerHTML = '▶️ Musik abspielen';
+                btn.classList.replace('bg-red-800', 'bg-green-700');
+                btn.classList.replace('hover:bg-red-700', 'hover:bg-green-600');
+            }
+        }
+
+        function toggleMusic() {
+            if (bgMusic.paused) {
+                bgMusic.play()
+                    .then(() => updateMusicButtonUI(true))
+                    .catch(e => console.log("Audio Play blockiert:", e));
+            } else {
+                bgMusic.pause();
+                updateMusicButtonUI(false);
             }
         }
 
         function playSuccessChime() {
-            // Ton zurücksetzen und abspielen
             sfxSuccess.currentTime = 0;
-            sfxSuccess.play().catch(e => console.log("SFX Play verweigert:", e));
+            sfxSuccess.play().catch(e => console.log("SFX Error:", e));
         }
 
         function playErrorSound() {
-            // Ton zurücksetzen und abspielen
             sfxError.currentTime = 0;
-            sfxError.play().catch(e => console.log("SFX Play verweigert:", e));
+            sfxError.play().catch(e => console.log("SFX Error:", e));
+        }
+
+        function resetProgress() {
+            // Speicher leeren
+            localStorage.removeItem('rabsi_opened_doors');
+            openedDoors = [];
+            
+            // UI aktualisieren (Klassen entfernen)
+            document.querySelectorAll('.door').forEach(door => {
+                door.classList.remove('open');
+            });
+            
+            // Bestätigungs-Ton
+            playErrorSound(); 
+            toggleSettings(); // Menü schließen
         }
 
         function initApp() {
             createSnowflakes();
-            
             const today = new Date();
-            const dec1st = new Date(CALENDAR_YEAR, 11, 1); // 1. Dezember des festgelegten Jahres (Monat 11)
+            const dec1st = new Date(CALENDAR_YEAR, 11, 1);
 
-            // Wenn wir vor dem 1. Dezember sind, zeige Login. Sonst direkt Kalender.
             if (today < dec1st) {
-                // Bei Reload ist isAuthenticated immer false, daher wird der Login wieder erzwungen.
-                if(isAuthenticated) {
-                    showCalendar();
-                } else {
-                    document.getElementById('loginSection').classList.remove('hidden');
-                }
+                document.getElementById('loginSection').classList.remove('hidden');
             } else {
                 showCalendar();
             }
@@ -345,7 +350,7 @@
                 errorMsg.classList.add('hidden');
                 document.getElementById('loginSection').classList.add('hidden');
                 
-                // Versuchen Musik direkt zu starten (wird vom Browser oft erlaubt, da Button-Klick)
+                // Audio direkt beim Klick starten (umgeht Autoplay-Blockaden)
                 if(bgMusic.paused) toggleMusic();
                 
                 showCalendar();
@@ -356,7 +361,6 @@
             }
         }
 
-        // Enter-Taste für den Login
         document.getElementById('passwordInput')?.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') checkPassword();
         });
@@ -391,10 +395,8 @@
 
         function handleDoorClick(dayNumber) {
             const today = new Date();
-            // Das Datum ab dem das Türchen geöffnet werden darf
             const unlockDate = new Date(CALENDAR_YEAR, 11, dayNumber);
             
-            // Wenn eingeloggt (Admin) oder Datum erreicht ist, öffne das Türchen!
             if (isAuthenticated || today >= unlockDate) {
                 openDoor(dayNumber);
             } else {
@@ -406,22 +408,18 @@
         function openDoor(dayNumber) {
             const doorElement = document.getElementById(`door-${dayNumber}`);
             
-            // Wenn schon offen, zeige einfach nochmal die große Nachricht
             if (openedDoors.includes(dayNumber)) {
                 playSuccessChime();
                 showMessageModal(dayNumber);
                 return;
             }
 
-            // Animation ausführen
             doorElement.classList.add('open');
             playSuccessChime();
             
-            // In LocalStorage speichern
             openedDoors.push(dayNumber);
             localStorage.setItem('rabsi_opened_doors', JSON.stringify(openedDoors));
 
-            // Nach kurzer Verzögerung (für die Flip-Animation) das große Modal anzeigen
             setTimeout(() => {
                 showMessageModal(dayNumber);
             }, 600);
@@ -456,7 +454,6 @@
                 flake.className = 'snowflake';
                 flake.innerText = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
                 
-                // Zufällige Positionierung und Animation
                 const startLeft = Math.random() * 100;
                 const animationDuration = 5 + Math.random() * 10;
                 const animationDelay = Math.random() * 10;
@@ -473,7 +470,6 @@
             }
         }
 
-        // App starten, sobald das DOM geladen ist
         document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
