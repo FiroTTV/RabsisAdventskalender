@@ -1,1 +1,366 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabsi's Adventskalender</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #064e3b; /* Tannengrün */
+            background-image: radial-gradient(circle at top, #064e3b, #022c22);
+            color: #fef3c7;
+            min-height: 100vh;
+            overflow-x: hidden;
+            margin: 0;
+        }
 
+        .title-font {
+            font-family: 'Great Vibes', cursive;
+        }
+
+        /* Schneeflocken-Effekt */
+        .snow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .snowflake {
+            position: absolute;
+            top: -10px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.5em;
+            user-select: none;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+
+        .door-container {
+            perspective: 1000px;
+            z-index: 10;
+        }
+
+        .door {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            position: relative;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .door.open {
+            transform: rotateY(180deg);
+        }
+
+        .door-front, .door-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .door-front {
+            background: linear-gradient(135deg, #7f1d1d, #991b1b); /* Dunkelrot */
+            border: 2px solid #fbbf24; /* Gold */
+            color: #fbbf24;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        /* Goldene Verzierung für die Türchen */
+        .door-front::before {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            border: 1px dashed rgba(251, 191, 36, 0.5);
+            border-radius: 0.5rem;
+        }
+
+        .door-back {
+            background-color: #fef3c7; /* Helles Creme */
+            color: #7f1d1d;
+            transform: rotateY(180deg);
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+            border: 2px solid #fbbf24;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .door-24 .door-front {
+            background: linear-gradient(135deg, #fbbf24, #d97706);
+            color: #7f1d1d;
+            border-color: #fef3c7;
+        }
+        .door-24 .door-front::before {
+            border-color: rgba(127, 29, 29, 0.5);
+        }
+
+        /* Modal Animationen */
+        .modal-enter {
+            animation: popIn 0.3s ease-out forwards;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="relative flex flex-col items-center justify-center p-4">
+
+    <div class="snow-container" id="snowContainer"></div>
+
+    <div id="loginSection" class="hidden z-20 w-full max-w-md bg-white/10 backdrop-blur-md border border-yellow-500/30 p-8 rounded-2xl shadow-2xl text-center mt-20">
+        <h1 class="title-font text-5xl text-yellow-400 mb-6 drop-shadow-md">Rabsi's Adventskalender</h1>
+        <p class="mb-6 text-gray-200">Psst... Es ist noch nicht Dezember! Bitte gib das geheime Passwort ein, um weiterzugehen.</p>
+        
+        <div class="flex flex-col gap-4">
+            <input type="password" id="passwordInput" placeholder="Passwort" class="px-4 py-3 rounded-lg bg-white/20 border border-yellow-400/50 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-center">
+            <button onclick="checkPassword()" class="bg-red-800 hover:bg-red-700 text-yellow-400 font-semibold py-3 px-6 rounded-lg transition-colors duration-300 border border-yellow-400 shadow-lg">
+                Eintreten
+            </button>
+            <p id="loginError" class="text-red-400 text-sm hidden mt-2">Falsches Passwort, Liebling! Versuchs nochmal.</p>
+        </div>
+    </div>
+
+    <div id="calendarSection" class="hidden z-20 w-full max-w-5xl flex-col items-center py-10">
+        <h1 class="title-font text-5xl md:text-7xl text-yellow-400 mb-2 drop-shadow-lg text-center">Rabsi's Adventskalender</h1>
+        <p class="text-yellow-100 mb-10 text-center text-lg italic opacity-80">Jeden Tag eine kleine Überraschung für dich ❤️</p>
+        
+        <!-- Grid für die 24 Türchen -->
+        <div id="calendarGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 w-full px-2">
+            <!-- Türchen werden hier per JavaScript generiert -->
+        </div>
+    </div>
+
+    <div id="earlyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+        <div class="bg-red-900 border-2 border-yellow-400 rounded-2xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl modal-enter">
+            <div class="text-5xl mb-4">🙈</div>
+            <h2 class="title-font text-3xl text-yellow-400 mb-4">Halt, Stop!</h2>
+            <p class="text-white mb-6 text-lg">Noch nicht spicken, Rabsi! Dieses Türchen bleibt noch zu.</p>
+            <button onclick="closeEarlyModal()" class="bg-yellow-500 hover:bg-yellow-400 text-red-900 font-bold py-2 px-6 rounded-lg transition-colors w-full">
+                Okay, ich warte brav
+            </button>
+        </div>
+    </div>
+
+    <div id="messageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div class="bg-white border-4 border-yellow-500 rounded-3xl p-8 max-w-md w-full text-center shadow-[0_0_40px_rgba(251,191,36,0.3)] modal-enter relative">
+            <button onclick="closeMessageModal()" class="absolute top-4 right-4 text-gray-400 hover:text-red-800 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="messageEmoji" class="text-6xl mb-4 animate-bounce">❤️</div>
+            <h2 id="messageDay" class="title-font text-4xl text-red-800 mb-2">Tag X</h2>
+            <p id="messageText" class="text-gray-800 text-lg font-medium italic leading-relaxed"></p>
+        </div>
+    </div>
+
+    <script>
+        const CALENDAR_YEAR = 2026;
+        const CORRECT_PASSWORD = "rabsi";
+        
+        // 24 süße Nachrichten für den Kalender
+        const calendarMessages = {
+            1: { emoji: "💌", text: "Du bist der wunderbarste Mensch in meinem Leben." },
+            2: { emoji: "✨", text: "Dein Lächeln verzaubert jeden meiner Tage." },
+            3: { emoji: "🥰", text: "Ich liebe es, wie du lachst." },
+            4: { emoji: "☕", text: "Mit dir ist selbst der kälteste Wintertag warm." },
+            5: { emoji: "🌟", text: "Du bist mein Lieblingsgedanke am Morgen." },
+            6: { emoji: "🎅", text: "Einen wunderschönen Nikolaustag, mein Engel!" },
+            7: { emoji: "❤️", text: "Ich bin so dankbar, dass es dich gibt." },
+            8: { emoji: "🎶", text: "Deine Stimme ist mein Lieblingsgeräusch." },
+            9: { emoji: "🌹", text: "Du bist wunderschön, von innen und von außen." },
+            10: { emoji: "🤗", text: "Eine virtuelle Umarmung, nur für dich!" },
+            11: { emoji: "💖", text: "Du machst mein Leben komplett." },
+            12: { emoji: "🎄", text: "Halbzeit! Bald ist Weihnachten, Schatz." },
+            13: { emoji: "😘", text: "Ich schicke dir tausend Küsse!" },
+            14: { emoji: "🌠", text: "Du bist mein größter Wunsch, der in Erfüllung ging." },
+            15: { emoji: "🦋", text: "Du gibst mir immer noch Schmetterlinge im Bauch." },
+            16: { emoji: "🎁", text: "Du bist das beste Geschenk meines Lebens." },
+            17: { emoji: "💫", text: "Ich bin so stolz auf alles, was du tust." },
+            18: { emoji: "🍪", text: "Süßer als jedes Weihnachtsplätzchen bist du!" },
+            19: { emoji: "💑", text: "Wir beide gegen den Rest der Welt." },
+            20: { emoji: "❄️", text: "Selbst im Schnee bist du am heißesten!" },
+            21: { emoji: "💕", text: "Ich liebe dich mehr, als Worte sagen können." },
+            22: { emoji: "🥂", text: "Auf viele weitere wunderschöne Weihnachten mit dir." },
+            23: { emoji: "🤫", text: "Nur noch ein Mal schlafen..." },
+            24: { emoji: "🎄❤️", text: "Frohe Weihnachten, mein geliebter Schatz! Ich liebe dich über alles." }
+        };
+
+        // Ein gemischtes Layout für die Türchen, damit sie nicht langweilig 1-24 gereiht sind
+        const doorLayout = [17, 4, 22, 9, 12, 1, 15, 8, 24, 5, 19, 2, 11, 7, 21, 14, 3, 20, 6, 18, 10, 23, 13, 16];
+
+        // Status der geöffneten Türchen im LocalStorage speichern
+        let openedDoors = JSON.parse(localStorage.getItem('rabsi_opened_doors')) || [];
+
+        function initApp() {
+            createSnowflakes();
+            
+            const today = new Date();
+            const dec1st = new Date(CALENDAR_YEAR, 11, 1); // 1. Dezember des festgelegten Jahres (Monat 11)
+
+            // Wenn wir vor dem 1. Dezember sind, zeige Login. Sonst direkt Kalender.
+            if (today < dec1st) {
+                // Check if already logged in via session
+                if(sessionStorage.getItem('rabsi_authenticated') === 'true') {
+                    showCalendar();
+                } else {
+                    document.getElementById('loginSection').classList.remove('hidden');
+                }
+            } else {
+                showCalendar();
+            }
+        }
+
+        function checkPassword() {
+            const input = document.getElementById('passwordInput').value.toLowerCase().trim();
+            const errorMsg = document.getElementById('loginError');
+
+            if (input === CORRECT_PASSWORD) {
+                sessionStorage.setItem('rabsi_authenticated', 'true');
+                errorMsg.classList.add('hidden');
+                document.getElementById('loginSection').classList.add('hidden');
+                showCalendar();
+            } else {
+                errorMsg.classList.remove('hidden');
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+
+        // Enter-Taste für den Login
+        document.getElementById('passwordInput')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        function showCalendar() {
+            document.getElementById('calendarSection').classList.remove('hidden');
+            document.getElementById('calendarSection').classList.add('flex');
+            
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            doorLayout.forEach(dayNumber => {
+                const doorDiv = document.createElement('div');
+                doorDiv.className = 'door-container';
+                
+                const isOpened = openedDoors.includes(dayNumber);
+                const extraClass = dayNumber === 24 ? 'door-24' : '';
+                
+                doorDiv.innerHTML = `
+                    <div class="door ${isOpened ? 'open' : ''} ${extraClass}" id="door-${dayNumber}" onclick="handleDoorClick(${dayNumber})">
+                        <div class="door-front">
+                            ${dayNumber}
+                        </div>
+                        <div class="door-back">
+                            <span class="text-3xl">${calendarMessages[dayNumber].emoji}</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(doorDiv);
+            });
+        }
+
+        function handleDoorClick(dayNumber) {
+            const today = new Date();
+            
+            // Das Datum ab dem das Türchen geöffnet werden darf: 
+            // Jahr = CALENDAR_YEAR, Monat = 11 (Dezember), Tag = dayNumber
+            const unlockDate = new Date(CALENDAR_YEAR, 11, dayNumber);
+            
+            // Um 00:00 Uhr des jeweiligen Tages soll es freigeschaltet sein.
+            if (today >= unlockDate) {
+                openDoor(dayNumber);
+            } else {
+                showEarlyModal();
+            }
+        }
+
+        function openDoor(dayNumber) {
+            const doorElement = document.getElementById(`door-${dayNumber}`);
+            
+            // Wenn schon offen, zeige einfach nochmal die große Nachricht
+            if (openedDoors.includes(dayNumber)) {
+                showMessageModal(dayNumber);
+                return;
+            }
+
+            // Animation ausführen
+            doorElement.classList.add('open');
+            
+            // In LocalStorage speichern
+            openedDoors.push(dayNumber);
+            localStorage.setItem('rabsi_opened_doors', JSON.stringify(openedDoors));
+
+            // Nach kurzer Verzögerung (für die Flip-Animation) das große Modal anzeigen
+            setTimeout(() => {
+                showMessageModal(dayNumber);
+            }, 600);
+        }
+
+        function showEarlyModal() {
+            document.getElementById('earlyModal').classList.remove('hidden');
+        }
+
+        function closeEarlyModal() {
+            document.getElementById('earlyModal').classList.add('hidden');
+        }
+
+        function showMessageModal(dayNumber) {
+            const data = calendarMessages[dayNumber];
+            document.getElementById('messageDay').innerText = `Tag ${dayNumber}`;
+            document.getElementById('messageText').innerText = data.text;
+            document.getElementById('messageEmoji').innerText = data.emoji;
+            document.getElementById('messageModal').classList.remove('hidden');
+        }
+
+        function closeMessageModal() {
+            document.getElementById('messageModal').classList.add('hidden');
+        }
+
+        function createSnowflakes() {
+            const container = document.getElementById('snowContainer');
+            const snowflakeChars = ['❄', '❅', '❆'];
+            
+            for (let i = 0; i < 40; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snowflake';
+                flake.innerText = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
+                
+                // Zufällige Positionierung und Animation
+                const startLeft = Math.random() * 100;
+                const animationDuration = 5 + Math.random() * 10;
+                const animationDelay = Math.random() * 10;
+                const opacity = 0.3 + Math.random() * 0.7;
+                const size = 0.5 + Math.random() * 1.5;
+                
+                flake.style.left = `${startLeft}vw`;
+                flake.style.animationDuration = `${animationDuration}s`;
+                flake.style.animationDelay = `${animationDelay}s`;
+                flake.style.opacity = opacity;
+                flake.style.fontSize = `${size}em`;
+                
+                container.appendChild(flake);
+            }
+        }
