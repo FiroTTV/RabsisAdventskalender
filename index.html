@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rabsi's Adventskalender</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -128,6 +129,10 @@
 </head>
 <body class="relative flex flex-col items-center justify-center p-4">
 
+    <button id="musicToggleBtn" onclick="toggleMusic()" class="fixed top-4 right-4 z-50 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-yellow-400/50 text-yellow-400 px-4 py-2 rounded-full font-bold shadow-lg transition-all cursor-pointer">
+        🔇 Musik Aus
+    </button>
+
     <div class="snow-container" id="snowContainer"></div>
 
     <div id="loginSection" class="hidden z-20 w-full max-w-md bg-white/10 backdrop-blur-md border border-yellow-500/30 p-8 rounded-2xl shadow-2xl text-center mt-20">
@@ -182,6 +187,85 @@
         const CORRECT_PASSWORD = "Schneezauber#Rabsi2026!";
         let isAuthenticated = false;
         
+        let isMusicPlaying = false;
+        let bgSynth, chimeSynth;
+
+        async function initAudio() {
+            // Audio-Context muss nach Nutzerinteraktion gestartet werden
+            if (Tone.context.state !== 'running') {
+                await Tone.start();
+            }
+            if (!bgSynth) {
+                // Synthesizer für Hintergrundmusik
+                bgSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "sine" },
+                    envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 1 }
+                }).toDestination();
+                bgSynth.volume.value = -15;
+
+                // Synthesizer für Soundeffekte
+                chimeSynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 2 }
+                }).toDestination();
+                chimeSynth.volume.value = -8;
+
+                // Jingle Bells Melodie für den Hintergrund
+                const melody = [
+                    {"time": "0:0", "note": "E4", "dur": "4n"},
+                    {"time": "0:1", "note": "E4", "dur": "4n"},
+                    {"time": "0:2", "note": "E4", "dur": "2n"},
+                    {"time": "1:0", "note": "E4", "dur": "4n"},
+                    {"time": "1:1", "note": "E4", "dur": "4n"},
+                    {"time": "1:2", "note": "E4", "dur": "2n"},
+                    {"time": "2:0", "note": "E4", "dur": "4n"},
+                    {"time": "2:1", "note": "G4", "dur": "4n"},
+                    {"time": "2:2", "note": "C4", "dur": "4n.-8n"},
+                    {"time": "2:3.5", "note": "D4", "dur": "8n"},
+                    {"time": "3:0", "note": "E4", "dur": "1m"}
+                ];
+                
+                const part = new Tone.Part((time, value) => {
+                    bgSynth.triggerAttackRelease(value.note, value.dur, time);
+                }, melody).start(0);
+                part.loop = true;
+                part.loopEnd = "4m";
+                Tone.Transport.bpm.value = 110;
+            }
+        }
+
+        async function toggleMusic() {
+            await initAudio();
+            const btn = document.getElementById('musicToggleBtn');
+            if (isMusicPlaying) {
+                Tone.Transport.pause();
+                isMusicPlaying = false;
+                btn.innerHTML = '🔇 Musik Aus';
+            } else {
+                Tone.Transport.start();
+                isMusicPlaying = true;
+                btn.innerHTML = '🔊 Musik An';
+            }
+        }
+
+        function playSuccessChime() {
+            if(chimeSynth) {
+                const now = Tone.now();
+                chimeSynth.triggerAttackRelease("C5", "16n", now);
+                chimeSynth.triggerAttackRelease("E5", "16n", now + 0.1);
+                chimeSynth.triggerAttackRelease("G5", "16n", now + 0.2);
+                chimeSynth.triggerAttackRelease("C6", "2n", now + 0.3);
+            }
+        }
+
+        function playErrorSound() {
+            if(chimeSynth) {
+                const now = Tone.now();
+                chimeSynth.triggerAttackRelease("C3", "8n", now);
+                chimeSynth.triggerAttackRelease("G2", "4n", now + 0.2);
+            }
+        }
+
         // 24 süße Nachrichten für den Kalender
         const calendarMessages = {
             1: { emoji: "💌", text: "Du bist der wunderbarste Mensch in meinem Leben." },
@@ -241,6 +325,7 @@
             const errorMsg = document.getElementById('loginError');
 
             if (input === CORRECT_PASSWORD) {
+                initAudio(); // Audio initialisieren sobald Benutzer interagiert
                 isAuthenticated = true;
                 errorMsg.classList.add('hidden');
                 document.getElementById('loginSection').classList.add('hidden');
@@ -285,16 +370,19 @@
         }
 
         function handleDoorClick(dayNumber) {
+            initAudio(); // Auch hier falls User am 1. Dezember direkt auf ein Tür klickt
+            
             const today = new Date();
             
             // Das Datum ab dem das Türchen geöffnet werden darf: 
             // Jahr = CALENDAR_YEAR, Monat = 11 (Dezember), Tag = dayNumber
             const unlockDate = new Date(CALENDAR_YEAR, 11, dayNumber);
             
-            // Um 00:00 Uhr des jeweiligen Tages soll es freigeschaltet sein.
-            if (today >= unlockDate) {
+            // Wenn eingeloggt (Admin) oder Datum erreicht ist, öffne das Türchen!
+            if (isAuthenticated || today >= unlockDate) {
                 openDoor(dayNumber);
             } else {
+                playErrorSound();
                 showEarlyModal();
             }
         }
@@ -304,12 +392,14 @@
             
             // Wenn schon offen, zeige einfach nochmal die große Nachricht
             if (openedDoors.includes(dayNumber)) {
+                playSuccessChime();
                 showMessageModal(dayNumber);
                 return;
             }
 
             // Animation ausführen
             doorElement.classList.add('open');
+            playSuccessChime();
             
             // In LocalStorage speichern
             openedDoors.push(dayNumber);
