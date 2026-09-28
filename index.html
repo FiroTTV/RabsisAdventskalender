@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rabsi's Adventskalender</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <style>
         body {
             font-family: 'Nunito', sans-serif;
@@ -117,7 +117,6 @@
             border-color: rgba(127, 29, 29, 0.5);
         }
 
-        /* Modal Animationen */
         .modal-enter {
             animation: popIn 0.3s ease-out forwards;
         }
@@ -125,13 +124,53 @@
             0% { transform: scale(0.9); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
+
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            accent-color: #fbbf24; /* Tailwind yellow-400 */
+        }
     </style>
 </head>
 <body class="relative flex flex-col items-center justify-center p-4">
 
-    <button id="musicToggleBtn" onclick="toggleMusic()" class="fixed top-4 right-4 z-50 bg-white/20 hover:bg-white/30 backdrop-blur-md border border-yellow-400/50 text-yellow-400 px-4 py-2 rounded-full font-bold shadow-lg transition-all cursor-pointer">
-        🔇 Musik Aus
-    </button>
+    <!-- Audio Elemente (Echtes Weihnachtslied und Effekte) -->
+    <audio id="bgMusic" loop>
+        <!-- Kevin MacLeod - Jingle Bells (Public Domain/CC) -->
+        <source src="https://upload.wikimedia.org/wikipedia/commons/1/15/Jingle_Bells_by_Kevin_MacLeod.ogg" type="audio/ogg">
+    </audio>
+    <audio id="sfxSuccess">
+        <!-- Ein magisches weihnachtliches Klingeln -->
+        <source src="https://upload.wikimedia.org/wikipedia/commons/e/e5/Magical_Chime.ogg" type="audio/ogg">
+    </audio>
+    <audio id="sfxError">
+        <!-- Ein sanfter Error-Ton -->
+        <source src="https://upload.wikimedia.org/wikipedia/commons/4/41/Error_beep.ogg" type="audio/ogg">
+    </audio>
+
+    <!-- Audio Einstellungs-Menü oben rechts -->
+    <div class="fixed top-4 right-4 z-50 flex flex-col items-end gap-2">
+        <button id="settingsToggleBtn" onclick="toggleSettings()" class="bg-white/20 hover:bg-white/30 backdrop-blur-md border border-yellow-400/50 text-yellow-400 px-4 py-2 rounded-full font-bold shadow-lg transition-all cursor-pointer flex items-center gap-2">
+            ⚙️ <span class="hidden sm:inline">Audio</span>
+        </button>
+        
+        <div id="settingsPanel" class="hidden bg-black/60 backdrop-blur-lg border border-yellow-500/50 p-5 rounded-2xl shadow-2xl flex-col gap-4 text-sm text-yellow-100 min-w-[200px] modal-enter">
+            <h3 class="font-bold text-yellow-400 border-b border-yellow-500/30 pb-2 mb-1">Einstellungen</h3>
+            
+            <button id="musicToggleBtn" onclick="toggleMusic()" class="w-full bg-red-800 hover:bg-red-700 text-yellow-400 font-semibold py-2 px-4 rounded-lg transition-colors border border-yellow-400 shadow-sm flex justify-center items-center gap-2">
+                ▶️ Musik abspielen
+            </button>
+
+            <div class="flex flex-col gap-1 mt-2">
+                <label for="musicVol" class="flex justify-between">Musik Lautstärke</label>
+                <input type="range" id="musicVol" min="0" max="1" step="0.05" value="0.3" class="w-full cursor-pointer">
+            </div>
+
+            <div class="flex flex-col gap-1 mt-2">
+                <label for="sfxVol" class="flex justify-between">Effekte Lautstärke</label>
+                <input type="range" id="sfxVol" min="0" max="1" step="0.05" value="0.8" class="w-full cursor-pointer">
+            </div>
+        </div>
+    </div>
 
     <div class="snow-container" id="snowContainer"></div>
 
@@ -185,87 +224,9 @@
     <script>
         const CALENDAR_YEAR = 2026;
         const CORRECT_PASSWORD = "Schneezauber#Rabsi2026!";
+        // WICHTIG: Status nur in dieser JS Variable speichern. Bei Neuladen ist sie wieder false!
         let isAuthenticated = false;
         
-        let isMusicPlaying = false;
-        let bgSynth, chimeSynth;
-
-        async function initAudio() {
-            // Audio-Context muss nach Nutzerinteraktion gestartet werden
-            if (Tone.context.state !== 'running') {
-                await Tone.start();
-            }
-            if (!bgSynth) {
-                // Synthesizer für Hintergrundmusik
-                bgSynth = new Tone.PolySynth(Tone.Synth, {
-                    oscillator: { type: "sine" },
-                    envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 1 }
-                }).toDestination();
-                bgSynth.volume.value = -15;
-
-                // Synthesizer für Soundeffekte
-                chimeSynth = new Tone.PolySynth(Tone.Synth, {
-                    oscillator: { type: "triangle" },
-                    envelope: { attack: 0.05, decay: 0.1, sustain: 0.3, release: 2 }
-                }).toDestination();
-                chimeSynth.volume.value = -8;
-
-                // Jingle Bells Melodie für den Hintergrund
-                const melody = [
-                    {"time": "0:0", "note": "E4", "dur": "4n"},
-                    {"time": "0:1", "note": "E4", "dur": "4n"},
-                    {"time": "0:2", "note": "E4", "dur": "2n"},
-                    {"time": "1:0", "note": "E4", "dur": "4n"},
-                    {"time": "1:1", "note": "E4", "dur": "4n"},
-                    {"time": "1:2", "note": "E4", "dur": "2n"},
-                    {"time": "2:0", "note": "E4", "dur": "4n"},
-                    {"time": "2:1", "note": "G4", "dur": "4n"},
-                    {"time": "2:2", "note": "C4", "dur": "4n.-8n"},
-                    {"time": "2:3.5", "note": "D4", "dur": "8n"},
-                    {"time": "3:0", "note": "E4", "dur": "1m"}
-                ];
-                
-                const part = new Tone.Part((time, value) => {
-                    bgSynth.triggerAttackRelease(value.note, value.dur, time);
-                }, melody).start(0);
-                part.loop = true;
-                part.loopEnd = "4m";
-                Tone.Transport.bpm.value = 110;
-            }
-        }
-
-        async function toggleMusic() {
-            await initAudio();
-            const btn = document.getElementById('musicToggleBtn');
-            if (isMusicPlaying) {
-                Tone.Transport.pause();
-                isMusicPlaying = false;
-                btn.innerHTML = '🔇 Musik Aus';
-            } else {
-                Tone.Transport.start();
-                isMusicPlaying = true;
-                btn.innerHTML = '🔊 Musik An';
-            }
-        }
-
-        function playSuccessChime() {
-            if(chimeSynth) {
-                const now = Tone.now();
-                chimeSynth.triggerAttackRelease("C5", "16n", now);
-                chimeSynth.triggerAttackRelease("E5", "16n", now + 0.1);
-                chimeSynth.triggerAttackRelease("G5", "16n", now + 0.2);
-                chimeSynth.triggerAttackRelease("C6", "2n", now + 0.3);
-            }
-        }
-
-        function playErrorSound() {
-            if(chimeSynth) {
-                const now = Tone.now();
-                chimeSynth.triggerAttackRelease("C3", "8n", now);
-                chimeSynth.triggerAttackRelease("G2", "4n", now + 0.2);
-            }
-        }
-
         // 24 süße Nachrichten für den Kalender
         const calendarMessages = {
             1: { emoji: "💌", text: "Du bist der wunderbarste Mensch in meinem Leben." },
@@ -300,6 +261,62 @@
         // Status der geöffneten Türchen im LocalStorage speichern
         let openedDoors = JSON.parse(localStorage.getItem('rabsi_opened_doors')) || [];
 
+        // Audio Setup & Lautstärke-Regelung
+        const bgMusic = document.getElementById('bgMusic');
+        const sfxSuccess = document.getElementById('sfxSuccess');
+        const sfxError = document.getElementById('sfxError');
+        
+        const musicVolSlider = document.getElementById('musicVol');
+        const sfxVolSlider = document.getElementById('sfxVol');
+        
+        // Initial volumes setzen
+        bgMusic.volume = musicVolSlider.value;
+        sfxSuccess.volume = sfxVolSlider.value;
+        sfxError.volume = sfxVolSlider.value;
+
+        // Event-Listener für Slider
+        musicVolSlider.addEventListener('input', (e) => {
+            bgMusic.volume = e.target.value;
+        });
+
+        sfxVolSlider.addEventListener('input', (e) => {
+            sfxSuccess.volume = e.target.value;
+            sfxError.volume = e.target.value;
+        });
+
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('hidden');
+            panel.classList.toggle('flex');
+        }
+
+        function toggleMusic() {
+            const btn = document.getElementById('musicToggleBtn');
+            if (bgMusic.paused) {
+                bgMusic.play().catch(e => console.log("Audio Play verweigert:", e));
+                btn.innerHTML = '⏸️ Musik pausieren';
+                btn.classList.replace('bg-red-800', 'bg-green-700');
+                btn.classList.replace('hover:bg-red-700', 'hover:bg-green-600');
+            } else {
+                bgMusic.pause();
+                btn.innerHTML = '▶️ Musik abspielen';
+                btn.classList.replace('bg-green-700', 'bg-red-800');
+                btn.classList.replace('hover:bg-green-600', 'hover:bg-red-700');
+            }
+        }
+
+        function playSuccessChime() {
+            // Ton zurücksetzen und abspielen
+            sfxSuccess.currentTime = 0;
+            sfxSuccess.play().catch(e => console.log("SFX Play verweigert:", e));
+        }
+
+        function playErrorSound() {
+            // Ton zurücksetzen und abspielen
+            sfxError.currentTime = 0;
+            sfxError.play().catch(e => console.log("SFX Play verweigert:", e));
+        }
+
         function initApp() {
             createSnowflakes();
             
@@ -308,7 +325,7 @@
 
             // Wenn wir vor dem 1. Dezember sind, zeige Login. Sonst direkt Kalender.
             if (today < dec1st) {
-                // Nur temporäre JS-Variable checken. Bei Reload ist diese wieder false.
+                // Bei Reload ist isAuthenticated immer false, daher wird der Login wieder erzwungen.
                 if(isAuthenticated) {
                     showCalendar();
                 } else {
@@ -320,19 +337,22 @@
         }
 
         function checkPassword() {
-            // .toLowerCase() entfernt, da das neue Passwort Groß- und Kleinschreibung nutzt
             const input = document.getElementById('passwordInput').value.trim();
             const errorMsg = document.getElementById('loginError');
 
             if (input === CORRECT_PASSWORD) {
-                initAudio(); // Audio initialisieren sobald Benutzer interagiert
                 isAuthenticated = true;
                 errorMsg.classList.add('hidden');
                 document.getElementById('loginSection').classList.add('hidden');
+                
+                // Versuchen Musik direkt zu starten (wird vom Browser oft erlaubt, da Button-Klick)
+                if(bgMusic.paused) toggleMusic();
+                
                 showCalendar();
             } else {
                 errorMsg.classList.remove('hidden');
                 document.getElementById('passwordInput').value = '';
+                playErrorSound();
             }
         }
 
@@ -370,12 +390,8 @@
         }
 
         function handleDoorClick(dayNumber) {
-            initAudio(); // Auch hier falls User am 1. Dezember direkt auf ein Tür klickt
-            
             const today = new Date();
-            
-            // Das Datum ab dem das Türchen geöffnet werden darf: 
-            // Jahr = CALENDAR_YEAR, Monat = 11 (Dezember), Tag = dayNumber
+            // Das Datum ab dem das Türchen geöffnet werden darf
             const unlockDate = new Date(CALENDAR_YEAR, 11, dayNumber);
             
             // Wenn eingeloggt (Admin) oder Datum erreicht ist, öffne das Türchen!
