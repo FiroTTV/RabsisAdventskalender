@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rabsi's Adventskalender</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Nunito', sans-serif;
             background-color: #064e3b; /* Tannengrün */
             background-image: radial-gradient(circle at top, #064e3b, #022c22);
             color: #fef3c7;
@@ -18,7 +18,7 @@
         }
 
         .title-font {
-            font-family: 'Great Vibes', cursive;
+            font-family: 'Dancing Script', cursive;
         }
 
         /* Schneeflocken-Effekt */
@@ -179,7 +179,8 @@
 
     <script>
         const CALENDAR_YEAR = 2026;
-        const CORRECT_PASSWORD = "rabsi";
+        const CORRECT_PASSWORD = "Schneezauber#Rabsi2026!";
+        let isAuthenticated = false;
         
         // 24 süße Nachrichten für den Kalender
         const calendarMessages = {
@@ -223,8 +224,8 @@
 
             // Wenn wir vor dem 1. Dezember sind, zeige Login. Sonst direkt Kalender.
             if (today < dec1st) {
-                // Check if already logged in via session
-                if(sessionStorage.getItem('rabsi_authenticated') === 'true') {
+                // Nur temporäre JS-Variable checken. Bei Reload ist diese wieder false.
+                if(isAuthenticated) {
                     showCalendar();
                 } else {
                     document.getElementById('loginSection').classList.remove('hidden');
@@ -235,11 +236,12 @@
         }
 
         function checkPassword() {
-            const input = document.getElementById('passwordInput').value.toLowerCase().trim();
+            // .toLowerCase() entfernt, da das neue Passwort Groß- und Kleinschreibung nutzt
+            const input = document.getElementById('passwordInput').value.trim();
             const errorMsg = document.getElementById('loginError');
 
             if (input === CORRECT_PASSWORD) {
-                sessionStorage.setItem('rabsi_authenticated', 'true');
+                isAuthenticated = true;
                 errorMsg.classList.add('hidden');
                 document.getElementById('loginSection').classList.add('hidden');
                 showCalendar();
