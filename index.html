@@ -247,6 +247,7 @@ let openedDoors = [];
 let progressKey = '';
 let editorOpen = false;
 let cloudUnsubscribe = null;
+let progressUnsubscribe = null;
 let cloudReady = false;
 let cloudLoading = false;
 
@@ -276,15 +277,54 @@ function getProgressKey() {
   if (previewMode) return TEST_PROGRESS_KEY;
   return PROGRESS_PREFIX + (currentUser ? currentUser.uid : 'guest');
 }
+
+// Admin und Admin-Vorschau nutzen lokalen Testfortschritt.
+// Rabsis echter Spielstand liegt ausschließlich in Firestore.
 function loadProgress() {
   progressKey = getProgressKey();
+  if (currentUser && !isAdmin && !previewMode) {
+    openedDoors = [];
+    return;
+  }
   try { openedDoors = JSON.parse(localStorage.getItem(progressKey) || '[]'); }
   catch (_) { openedDoors = []; }
   if (!Array.isArray(openedDoors)) openedDoors = [];
 }
+
 function saveProgress() {
+  if (currentUser && !isAdmin && !previewMode) return;
   try { localStorage.setItem(progressKey, JSON.stringify(openedDoors)); }
   catch (e) { console.warn('Fortschritt konnte nicht gespeichert werden.', e); }
+}
+
+async function saveOpenedDoorToCloud(day) {
+  if (!currentUser || isAdmin || previewMode) {
+    saveProgress();
+    return;
+  }
+  try {
+    await db.collection('users').doc(currentUser.uid)
+      .collection('progress').doc(String(day))
+      .set({ opened: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  } catch (e) {
+    console.error('Fortschritt konnte nicht in Firebase gespeichert werden:', e);
+    document.getElementById('loginStatus').textContent =
+      'Dein Fortschritt konnte gerade nicht synchronisiert werden. Bitte prüfe deine Internetverbindung.';
+  }
+}
+
+async function clearCloudProgress() {
+  if (!currentUser || isAdmin || previewMode) {
+    openedDoors = [];
+    saveProgress();
+    return;
+  }
+  const ref = db.collection('users').doc(currentUser.uid).collection('progress');
+  const snapshot = await ref.get();
+  const batch = db.batch();
+  snapshot.forEach(doc => batch.delete(doc.ref));
+  await batch.commit();
+  openedDoors = [];
 }
 function applyVolumes() {
   bgMusic.volume = Number(musicVol.value);
@@ -527,7 +567,9 @@ async function initializeCloudForAdmin() {
 
 function stopCloudListener() {
   if (typeof cloudUnsubscribe === 'function') cloudUnsubscribe();
+  if (typeof progressUnsubscribe === 'function') progressUnsubscribe();
   cloudUnsubscribe = null;
+  progressUnsubscribe = null;
   cloudReady = false;
 }
 
@@ -587,6 +629,22 @@ async function startCloudForUser(user) {
           console.error('Öffentliche Rätsel konnten nicht geladen werden:', error);
           cloudLoading = false;
           document.getElementById('loginStatus').textContent = 'Kalenderdaten konnten nicht geladen werden. Bitte später erneut anmelden.';
+        });
+
+      // Fortschritt live aus dem angemeldeten Spieler-Account laden.
+      progressUnsubscribe = db.collection('users').doc(user.uid).collection('progress')
+        .onSnapshot(snapshot => {
+          openedDoors = [];
+          snapshot.forEach(doc => {
+            const day = Number(doc.id);
+            if (day >= 1 && day <= 24 && doc.data().opened === true) openedDoors.push(day);
+          });
+          openedDoors.sort((a, b) => a - b);
+          renderCalendar();
+        }, error => {
+          console.error('Spielerfortschritt konnte nicht geladen werden:', error);
+          document.getElementById('loginStatus').textContent =
+            'Dein Fortschritt konnte nicht geladen werden. Bitte prüfe die Firestore-Regeln.';
         });
     }
   } catch (e) {
@@ -661,7 +719,7 @@ function openDoor(day) {
   const door=document.getElementById('door-'+day);
   if (!openedDoors.includes(day)) {
     openedDoors.push(day);
-    saveProgress();
+    saveOpenedDoorToCloud(day);
   }
   if (door) door.classList.add('open');
   playSound(sfxSuccess);
@@ -684,13 +742,17 @@ function showMessageModal(day) {
 function closeMessageModal(){document.getElementById('messageModal').classList.add('hidden');}
 function showEarlyModal(){document.getElementById('earlyModal').classList.remove('hidden');}
 function closeEarlyModal(){document.getElementById('earlyModal').classList.add('hidden');}
-function resetCurrentProgress() {
+async function resetCurrentProgress() {
   if (!confirm('Den Fortschritt für diese Ansicht wirklich zurücksetzen?')) return;
-  openedDoors=[];
-  saveProgress();
-  renderCalendar();
-  document.getElementById('settingsPanel').classList.add('hidden');
-  document.getElementById('settingsPanel').classList.remove('flex');
+  try {
+    await clearCloudProgress();
+    renderCalendar();
+    document.getElementById('settingsPanel').classList.add('hidden');
+    document.getElementById('settingsPanel').classList.remove('flex');
+  } catch (e) {
+    console.error('Fortschritt konnte nicht zurückgesetzt werden:', e);
+    alert('Der Fortschritt konnte nicht zurückgesetzt werden. Bitte prüfe deine Internetverbindung.');
+  }
 }
 
 async function updateAuthUI(user) {
