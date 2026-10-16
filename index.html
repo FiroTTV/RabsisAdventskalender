@@ -177,7 +177,7 @@
             
             <div class="border-t border-yellow-500/30 pt-4 mt-2">
                 <button onclick="resetProgress()" class="w-full bg-red-800 hover:bg-red-700 text-yellow-400 font-semibold py-2 px-4 rounded-lg transition-colors border border-yellow-400/50 shadow-sm flex justify-center items-center gap-2">
-                    🔄 Fortschritt zurücksetzen
+                    🔄 Lokalen Fortschritt zurücksetzen
                 </button>
             </div>
         </div>
@@ -185,16 +185,15 @@
 
     <div class="snow-container" id="snowContainer"></div>
 
-    <div id="loginSection" class="hidden z-20 w-full max-w-md bg-black/40 backdrop-blur-md border border-yellow-500/30 p-8 rounded-3xl shadow-2xl text-center mt-20">
+    <div id="loginSection" class="z-20 w-full max-w-md bg-black/40 backdrop-blur-md border border-yellow-500/30 p-8 rounded-3xl shadow-2xl text-center mt-20">
         <h1 class="title-font text-5xl text-yellow-400 mb-6 drop-shadow-md">Rabsi's Kalender</h1>
-        <p class="mb-6 text-gray-200">Psst... Es ist noch nicht Dezember! Bitte gib das geheime Passwort ein, um weiterzugehen.</p>
-        
+        <p class="mb-6 text-gray-200">Ein kleiner Weihnachtszauber ist nur für uns beide bestimmt. Melde dich bitte mit deinem Google-Konto an. ❤️</p>
         <div class="flex flex-col gap-4">
-            <input type="password" id="passwordInput" placeholder="Passwort" class="px-4 py-3 rounded-xl bg-white/20 border border-yellow-400/50 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-center font-bold tracking-widest">
-            <button onclick="checkPassword()" class="bg-gradient-to-r from-red-800 to-red-700 hover:from-red-700 hover:to-red-600 text-yellow-400 font-bold py-3 px-6 rounded-xl transition-all duration-300 border border-yellow-400 shadow-lg transform hover:scale-[1.02]">
-                Eintreten
+            <button id="googleLoginBtn" type="button" class="bg-gradient-to-r from-red-800 to-red-700 hover:from-red-700 hover:to-red-600 text-yellow-400 font-bold py-3 px-6 rounded-xl transition-all duration-300 border border-yellow-400 shadow-lg transform hover:scale-[1.02]">
+                <span class="mr-2">G</span> Mit Google anmelden
             </button>
-            <p id="loginError" class="text-red-400 text-sm hidden mt-2 font-semibold bg-red-900/50 py-2 rounded-lg border border-red-500/30">Falsches Passwort, Liebling! Versuchs nochmal.</p>
+            <p id="loginStatus" role="status" aria-live="polite" class="text-yellow-100 text-sm"></p>
+            <button id="logoutBtn" type="button" class="hidden text-sm text-yellow-200 underline">Abmelden</button>
         </div>
     </div>
 
@@ -233,11 +232,32 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script>
         const CALENDAR_YEAR = 2026;
-        const CORRECT_PASSWORD = "Schneezauber#Rabsi2026!";
-        let isAuthenticated = false; // Wird beim Reload immer false (Sicherheits-Feature)
-        let audioUnlocked = false; // Flag für die Audio-Entsperrung
+        let isAuthenticated = false;
+        let currentUser = null;
+        let audioUnlocked = false;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAYxtcyX_thDf2tXQUVKeB_cEbEk5br7kY4",
+            authDomain: "rabsis-adventskalender.firebaseapp.com",
+            projectId: "rabsis-adventskalender",
+            storageBucket: "rabsis-adventskalender.firebasestorage.app",
+            messagingSenderId: "586773975957",
+            appId: "1:586773975957:web:92ecd923ee1c8064fa5c9c",
+            measurementId: "G-Z69Q2Z1SBG"
+        };
+
+        // UI-Zuordnung; Firestore-/Serverregeln müssen Berechtigungen separat erzwingen.
+        const ADMIN_EMAIL = "finn.rogozinskizwei@gmail.com".toLowerCase();
+        const PLAYER_EMAIL = "stolzra08@gmail.com".toLowerCase();
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        googleProvider.setCustomParameters({ prompt: "select_account" });
         
         const calendarMessages = {
             1: { emoji: "💌", text: "Du bist der wunderbarste Mensch in meinem Leben." },
@@ -354,7 +374,8 @@
         }
 
         function resetProgress() {
-            // Speicher leeren
+            // Aktuell wird nur der lokale Browser-Fortschritt zurückgesetzt.
+            // Firestore-Synchronisierung folgt in einem späteren Schritt.
             localStorage.removeItem('rabsi_opened_doors');
             openedDoors = [];
             
@@ -369,40 +390,67 @@
 
         function initApp() {
             createSnowflakes();
-            const today = new Date();
-            const dec1st = new Date(CALENDAR_YEAR, 11, 1); // Monat 11 ist Dezember (0-indexiert)
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('googleLoginBtn').addEventListener('click', signInWithGoogle);
+            document.getElementById('logoutBtn').addEventListener('click', signOutUser);
 
-            if (today < dec1st) {
-                document.getElementById('loginSection').classList.remove('hidden');
-            } else {
-                showCalendar();
-            }
-        }
+            auth.onAuthStateChanged(async (user) => {
+                if (!user) {
+                    currentUser = null;
+                    isAuthenticated = false;
+                    document.getElementById('calendarSection').classList.add('hidden');
+                    document.getElementById('calendarSection').classList.remove('flex');
+                    document.getElementById('loginSection').classList.remove('hidden');
+                    document.getElementById('loginStatus').textContent = '';
+                    document.getElementById('logoutBtn').classList.add('hidden');
+                    return;
+                }
 
-        function checkPassword() {
-            const input = document.getElementById('passwordInput').value.trim();
-            const errorMsg = document.getElementById('loginError');
+                const email = (user.email || '').toLowerCase();
+                if (email !== ADMIN_EMAIL && email !== PLAYER_EMAIL) {
+                    await auth.signOut();
+                    document.getElementById('loginStatus').textContent =
+                        'Dieses Google-Konto ist für den Kalender nicht freigeschaltet.';
+                    return;
+                }
 
-            if (input === CORRECT_PASSWORD) {
+                currentUser = user;
                 isAuthenticated = true;
-                errorMsg.classList.add('hidden');
                 document.getElementById('loginSection').classList.add('hidden');
-                
-                // Hintergrundmusik beim erfolgreichen Login (aktiver Klick) abspielen
-                if(bgMusic.paused) toggleMusic();
-                
+                document.getElementById('logoutBtn').classList.remove('hidden');
                 showCalendar();
-            } else {
-                errorMsg.classList.remove('hidden');
-                document.getElementById('passwordInput').value = '';
-                playSound(sfxError);
+            });
+        }
+
+        async function signInWithGoogle() {
+            const status = document.getElementById('loginStatus');
+            const button = document.getElementById('googleLoginBtn');
+            status.textContent = 'Google-Anmeldung wird geöffnet …';
+            button.disabled = true;
+            try {
+                await auth.signInWithPopup(googleProvider);
+            } catch (error) {
+                console.error('Google-Anmeldung fehlgeschlagen:', error);
+                if (error.code === 'auth/popup-closed-by-user') {
+                    status.textContent = 'Anmeldung abgebrochen. Du kannst es erneut versuchen.';
+                } else if (error.code === 'auth/unauthorized-domain') {
+                    status.textContent = 'Diese Website-Domain ist in Firebase noch nicht autorisiert.';
+                } else {
+                    status.textContent = 'Anmeldung fehlgeschlagen. Prüfe die Google-Anmeldung in Firebase und versuche es erneut.';
+                }
+            } finally {
+                button.disabled = false;
             }
         }
 
-        // Ermöglicht Login per Enter-Taste
-        document.getElementById('passwordInput')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') checkPassword();
-        });
+        async function signOutUser() {
+            try {
+                await auth.signOut();
+            } catch (error) {
+                console.error('Abmelden fehlgeschlagen:', error);
+                document.getElementById('loginStatus').textContent = 'Abmelden war nicht möglich. Bitte erneut versuchen.';
+            }
+        }
 
         function showCalendar() {
             document.getElementById('calendarSection').classList.remove('hidden');
@@ -436,7 +484,7 @@
             const today = new Date();
             const unlockDate = new Date(CALENDAR_YEAR, 11, dayNumber);
             
-            if (isAuthenticated || today >= unlockDate) {
+            if (isAuthenticated && today >= unlockDate) {
                 openDoor(dayNumber);
             } else {
                 playSound(sfxError);
