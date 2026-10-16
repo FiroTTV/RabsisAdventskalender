@@ -1,444 +1,597 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rabsi's Adventskalender</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Nunito', sans-serif;
-            background-color: #064e3b;
-            background-image: radial-gradient(circle at top, #064e3b, #022c22);
-            color: #fef3c7;
-            min-height: 100vh;
-            overflow-x: hidden;
-            margin: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .title-font { font-family: 'Dancing Script', cursive; }
-        .snow-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 0;
-        }
-        .snowflake {
-            position: absolute; top: -10px; color: rgba(255,255,255,.8);
-            font-size: 1.5em; user-select: none; animation: fall linear infinite;
-        }
-        @keyframes fall {
-            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-        }
-        .door-container { perspective: 1000px; z-index: 10; }
-        .door {
-            width: 100%; aspect-ratio: 1 / 1; position: relative;
-            transition: transform .8s cubic-bezier(.34,1.56,.64,1);
-            transform-style: preserve-3d; cursor: pointer;
-        }
-        .door.open { transform: rotateY(180deg); }
-        .door-front, .door-back {
-            position: absolute; width: 100%; height: 100%;
-            backface-visibility: hidden; border-radius: .75rem;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,.3);
-        }
-        .door-front {
-            background: linear-gradient(135deg,#7f1d1d,#991b1b);
-            border: 2px solid #fbbf24; color: #fbbf24;
-            font-size: 2rem; font-weight: bold; transition: filter .3s;
-        }
-        .door:hover .door-front { filter: brightness(1.1); }
-        .door-front::before {
-            content: ''; position: absolute; width: 80%; height: 80%;
-            border: 1px dashed rgba(251,191,36,.5); border-radius: .5rem;
-        }
-        .door-back {
-            background-color: #fef3c7; color: #7f1d1d;
-            transform: rotateY(180deg); padding: .5rem;
-            text-align: center; font-size: .875rem;
-            border: 2px solid #fbbf24; flex-direction: column; gap: .5rem;
-        }
-        .door-24 .door-front {
-            background: linear-gradient(135deg,#fbbf24,#d97706);
-            color: #7f1d1d; border-color: #fef3c7;
-        }
-        .door-24 .door-front::before { border-color: rgba(127,29,29,.5); }
-        .modal-enter { animation: popIn .4s cubic-bezier(.175,.885,.32,1.275) forwards; }
-        @keyframes popIn {
-            0% { transform: scale(.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        input[type=range] { accent-color: #fbbf24; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rabsi's Adventskalender</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Nunito',sans-serif;background-color:#064e3b;background-image:radial-gradient(circle at top,#064e3b,#022c22);color:#fef3c7;min-height:100vh;overflow-x:hidden;margin:0;-webkit-tap-highlight-color:transparent}
+.title-font{font-family:'Dancing Script',cursive}
+.snow-container{position:fixed;inset:0;pointer-events:none;z-index:0}
+.snowflake{position:absolute;top:-10px;color:rgba(255,255,255,.8);font-size:1.5em;user-select:none;animation:fall linear infinite}
+@keyframes fall{0%{transform:translateY(-10vh) rotate(0);opacity:1}100%{transform:translateY(110vh) rotate(360deg);opacity:0}}
+.door-container{perspective:1000px;z-index:10}
+.door{width:100%;aspect-ratio:1;position:relative;transition:transform .8s cubic-bezier(.34,1.56,.64,1);transform-style:preserve-3d;cursor:pointer}
+.door.open{transform:rotateY(180deg)}
+.door-front,.door-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:.75rem;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 6px rgba(0,0,0,.3)}
+.door-front{background:linear-gradient(135deg,#7f1d1d,#991b1b);border:2px solid #fbbf24;color:#fbbf24;font-size:2rem;font-weight:bold;transition:filter .3s}
+.door:hover .door-front{filter:brightness(1.1)}
+.door-front::before{content:'';position:absolute;width:80%;height:80%;border:1px dashed rgba(251,191,36,.5);border-radius:.5rem}
+.door-back{background-color:#fef3c7;color:#7f1d1d;transform:rotateY(180deg);padding:.5rem;text-align:center;font-size:.875rem;border:2px solid #fbbf24;flex-direction:column;gap:.5rem}
+.door-24 .door-front{background:linear-gradient(135deg,#fbbf24,#d97706);color:#7f1d1d;border-color:#fef3c7}
+.door-24 .door-front::before{border-color:rgba(127,29,29,.5)}
+.modal-enter{animation:popIn .4s cubic-bezier(.175,.885,.32,1.275) forwards}
+@keyframes popIn{0%{transform:scale(.8);opacity:0}100%{transform:scale(1);opacity:1}}
+input[type=range]{accent-color:#fbbf24}
+.field{width:100%;border:1px solid #a16207;border-radius:.6rem;background:#fffbeb;color:#292524;padding:.65rem}
+.btn{border:1px solid #fbbf24;border-radius:.65rem;padding:.65rem .9rem;font-weight:700}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.small-label{display:block;font-size:.85rem;font-weight:700;margin-bottom:.3rem;color:#fde68a}
+.panel{background:rgba(0,0,0,.82);border:1px solid rgba(251,191,36,.5);border-radius:1rem;padding:1rem}
+</style>
 </head>
-<body class="relative flex flex-col items-center justify-center p-4">
+<body class="relative flex flex-col items-center p-4">
 
-    <audio id="bgMusic" loop preload="auto">
-        <source src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Jingle_Bells_3.ogg" type="audio/ogg">
-    </audio>
-    <audio id="sfxSuccess" preload="auto">
-        <source src="https://upload.wikimedia.org/wikipedia/commons/b/b5/133003__kyster__bell-ding.wav" type="audio/wav">
-    </audio>
-    <audio id="sfxError" preload="auto">
-        <source src="https://upload.wikimedia.org/wikipedia/commons/4/41/Error_beep.ogg" type="audio/ogg">
-    </audio>
+<audio id="bgMusic" loop preload="none"><source src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Jingle_Bells_3.ogg" type="audio/ogg"></audio>
+<audio id="sfxSuccess" preload="none"><source src="https://upload.wikimedia.org/wikipedia/commons/b/b5/133003__kyster__bell-ding.wav" type="audio/wav"></audio>
+<audio id="sfxError" preload="none"><source src="https://upload.wikimedia.org/wikipedia/commons/4/41/Error_beep.ogg" type="audio/ogg"></audio>
 
-    <div class="fixed top-4 right-4 z-50 flex flex-col items-end gap-2">
-        <button onclick="toggleSettings()" class="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-yellow-400/50 text-yellow-400 px-4 py-2 rounded-full font-bold shadow-lg transition-all flex items-center gap-2">
-            ⚙️ <span class="hidden sm:inline">Menü</span>
-        </button>
-        <div id="settingsPanel" class="hidden bg-black/90 backdrop-blur-xl border border-yellow-500/50 p-5 rounded-2xl shadow-2xl flex-col gap-4 text-sm text-yellow-100 min-w-[240px] modal-enter">
-            <div class="flex justify-between items-center border-b border-yellow-500/30 pb-2 mb-1">
-                <h3 class="font-bold text-yellow-400 text-lg">Einstellungen</h3>
-                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white text-xl">&times;</button>
-            </div>
-            <button id="musicToggleBtn" onclick="toggleMusic()" class="w-full bg-green-700 hover:bg-green-600 text-yellow-400 font-semibold py-2 px-4 rounded-lg border border-yellow-400 flex justify-center items-center gap-2">▶️ Musik abspielen</button>
-            <div class="flex flex-col gap-1 mt-2">
-                <label for="musicVol" class="flex justify-between font-semibold">Musik <span id="musicVolLabel">30%</span></label>
-                <input type="range" id="musicVol" min="0" max="1" step="0.05" value="0.3" class="w-full cursor-pointer">
-            </div>
-            <div class="flex flex-col gap-1 mt-2">
-                <label for="sfxVol" class="flex justify-between font-semibold">Effekte <span id="sfxVolLabel">80%</span></label>
-                <input type="range" id="sfxVol" min="0" max="1" step="0.05" value="0.8" class="w-full cursor-pointer">
-            </div>
-            <div class="border-t border-yellow-500/30 pt-4 mt-2">
-                <button onclick="resetProgress()" class="w-full bg-red-800 hover:bg-red-700 text-yellow-400 font-semibold py-2 px-4 rounded-lg border border-yellow-400/50 flex justify-center items-center gap-2">🔄 Lokalen Fortschritt zurücksetzen</button>
-            </div>
-        </div>
-    </div>
+<div class="fixed top-3 right-3 z-40 flex gap-2">
+<button onclick="toggleSettings()" class="btn bg-black/60 text-yellow-300">⚙️ Menü</button>
+<button id="logoutBtn" type="button" class="hidden btn bg-black/60 text-yellow-200">Abmelden</button>
+</div>
 
-    <div class="snow-container" id="snowContainer"></div>
+<div id="settingsPanel" class="hidden fixed top-16 right-3 z-40 panel flex-col gap-3 text-sm min-w-[240px]">
+<div class="flex justify-between items-center"><strong class="text-yellow-300 text-lg">Einstellungen</strong><button onclick="toggleSettings()">✕</button></div>
+<button id="musicToggleBtn" onclick="toggleMusic()" class="btn bg-green-800 text-yellow-300">▶️ Musik abspielen</button>
+<div><label for="musicVol" class="small-label">Musik <span id="musicVolLabel">30%</span></label><input type="range" id="musicVol" min="0" max="1" step=".05" value=".3" class="w-full"></div>
+<div><label for="sfxVol" class="small-label">Effekte <span id="sfxVolLabel">80%</span></label><input type="range" id="sfxVol" min="0" max="1" step=".05" value=".8" class="w-full"></div>
+<button onclick="resetCurrentProgress()" class="btn bg-red-900 text-yellow-200">Fortschritt zurücksetzen</button>
+</div>
 
-    <div id="loginSection" class="z-20 w-full max-w-md bg-black/40 backdrop-blur-md border border-yellow-500/30 p-8 rounded-3xl shadow-2xl text-center mt-20">
-        <h1 class="title-font text-5xl text-yellow-400 mb-6 drop-shadow-md">Rabsi's Kalender</h1>
-        <p class="mb-6 text-gray-200">Ein kleiner Weihnachtszauber ist nur für uns beide bestimmt. Melde dich bitte mit deinem Google-Konto an. ❤️</p>
-        <div class="flex flex-col gap-4">
-            <button id="googleLoginBtn" type="button" class="bg-gradient-to-r from-red-800 to-red-700 hover:from-red-700 hover:to-red-600 text-yellow-400 font-bold py-3 px-6 rounded-xl border border-yellow-400 shadow-lg transform hover:scale-[1.02]">
-                <span class="mr-2">G</span> Mit Google anmelden
-            </button>
-            <p id="loginStatus" role="status" aria-live="polite" class="text-yellow-100 text-sm"></p>
-            <button id="logoutBtn" type="button" class="hidden text-sm text-yellow-200 underline">Abmelden</button>
-        </div>
-    </div>
+<div class="snow-container" id="snowContainer"></div>
 
-    <div id="calendarSection" class="hidden z-20 w-full max-w-5xl flex-col items-center py-10">
-        <h1 class="title-font text-5xl md:text-7xl text-yellow-400 mb-2 drop-shadow-lg text-center">Rabsi's Adventskalender</h1>
-        <p class="text-yellow-100 mb-10 text-center text-lg italic opacity-90 drop-shadow-md">Jeden Tag eine kleine Überraschung für dich ❤️</p>
-        <div id="calendarGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 w-full px-2"></div>
-    </div>
+<section id="loginSection" class="z-20 w-full max-w-md bg-black/40 backdrop-blur-md border border-yellow-500/30 p-8 rounded-3xl shadow-2xl text-center mt-20">
+<h1 class="title-font text-5xl text-yellow-400 mb-6">Rabsi's Kalender</h1>
+<p class="mb-6 text-gray-200">Ein kleiner Weihnachtszauber ist nur für uns beide bestimmt. Melde dich bitte mit deinem Google-Konto an. ❤️</p>
+<button id="googleLoginBtn" class="w-full bg-gradient-to-r from-red-800 to-red-700 text-yellow-300 font-bold py-3 px-6 rounded-xl border border-yellow-400">Mit Google anmelden</button>
+<p id="loginStatus" role="status" aria-live="polite" class="text-yellow-100 text-sm mt-4"></p>
+</section>
 
-    <div id="earlyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-        <div class="bg-red-900 border-2 border-yellow-400 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl modal-enter">
-            <div class="text-6xl mb-4 animate-bounce">🙈</div>
-            <h2 class="title-font text-4xl text-yellow-400 mb-4 drop-shadow-md">Halt, Stop!</h2>
-            <p class="text-white mb-6 text-lg">Noch nicht spicken, Rabsi! Dieses Türchen bleibt noch zu.</p>
-            <button onclick="closeEarlyModal()" class="bg-yellow-400 hover:bg-yellow-300 text-red-900 font-bold py-3 px-6 rounded-xl w-full shadow-lg">Okay, ich warte brav 🥺</button>
-        </div>
-    </div>
+<main id="calendarSection" class="hidden z-20 w-full max-w-5xl flex-col items-center py-10">
+<h1 class="title-font text-5xl md:text-7xl text-yellow-400 mb-2 text-center">Rabsi's Adventskalender</h1>
+<p id="subtitle" class="text-yellow-100 mb-6 text-center text-lg italic">Jeden Tag eine kleine Überraschung für dich ❤️</p>
 
-    <div id="messageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-        <div class="bg-amber-50 border-4 border-yellow-500 rounded-3xl p-8 max-w-md w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.4)] modal-enter relative">
-            <button onclick="closeMessageModal()" class="absolute top-4 right-4 text-gray-400 hover:text-red-800">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-            <div id="messageEmoji" class="text-7xl mb-6 mt-4">❤️</div>
-            <h2 id="messageDay" class="title-font text-5xl text-red-800 mb-4">Tag X</h2>
-            <p id="messageText" class="text-gray-800 text-xl font-medium italic leading-relaxed mb-4"></p>
-        </div>
-    </div>
+<section id="adminToolbar" class="hidden w-full panel mb-6">
+<div class="flex flex-wrap items-center justify-between gap-3">
+<div><h2 class="text-xl font-bold text-yellow-300">🛠️ Adminbereich</h2><p class="text-sm text-amber-100">Bearbeitung und Testwerkzeuge</p></div>
+<div class="flex flex-wrap gap-2">
+<button class="btn bg-amber-500 text-red-950" onclick="toggleEditor()">✏️ Rätsel bearbeiten</button>
+<button class="btn bg-purple-800" onclick="togglePreview()" id="previewBtn">👀 Rabsi-Vorschau starten</button>
+</div>
+</div>
+<p id="adminNotice" class="text-xs text-amber-200 mt-3">Lokale Testversion: Änderungen gelten nur in diesem Browser.</p>
+</section>
 
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-    <script>
-        const CALENDAR_YEAR = 2026;
-        let isAuthenticated = false;
-        let currentUser = null;
-        let audioUnlocked = false;
+<section id="editorPanel" class="hidden w-full panel mb-6">
+<h2 class="text-2xl text-yellow-300 font-bold mb-2">Rätsel-Editor</h2>
+<p class="text-sm text-amber-100 mb-4">Änderungen werden lokal gespeichert. Lösungen sind im öffentlichen Quellcode nicht geheim.</p>
+<div class="grid md:grid-cols-2 gap-4">
+<div>
+<label class="small-label" for="editDay">Türchen auswählen</label>
+<select id="editDay" class="field"></select>
+</div>
+<div>
+<label class="small-label" for="editEmoji">Emoji</label>
+<input id="editEmoji" class="field" maxlength="20">
+</div>
+<div class="md:col-span-2">
+<label class="small-label" for="editText">Nachricht / Rätseltext</label>
+<textarea id="editText" class="field" rows="3"></textarea>
+</div>
+<div class="md:col-span-2">
+<label class="small-label" for="editHint">Hinweis</label>
+<textarea id="editHint" class="field" rows="2"></textarea>
+</div>
+<div class="md:col-span-2">
+<label class="small-label" for="editSolution">Lösung (nicht geheim!)</label>
+<textarea id="editSolution" class="field" rows="2"></textarea>
+</div>
+<div class="flex items-center gap-2">
+<input type="checkbox" id="editReleased" class="w-5 h-5">
+<label for="editReleased" class="font-bold">Türchen freigegeben</label>
+</div>
+<div class="flex items-center gap-2">
+<input type="checkbox" id="testIgnoreDate" class="w-5 h-5">
+<label for="testIgnoreDate" class="font-bold">Testmodus: Datumssperre ignorieren</label>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mt-5">
+<button class="btn bg-green-800" onclick="savePuzzle()">💾 Änderungen speichern</button>
+<button class="btn bg-slate-700" onclick="loadEditorFields()">Änderungen verwerfen</button>
+<button class="btn bg-red-900" onclick="resetPuzzleData()">Standardtexte wiederherstellen</button>
+</div>
+<hr class="border-yellow-700/60 my-5">
+<h3 class="font-bold text-yellow-300 mb-2">Sicherung und Export</h3>
+<div class="flex flex-wrap gap-2">
+<button class="btn bg-blue-800" onclick="exportData()">⬇️ JSON exportieren</button>
+<label class="btn bg-indigo-800 cursor-pointer">⬆️ JSON importieren<input type="file" id="importFile" accept=".json,application/json" class="hidden"></label>
+</div>
+<p id="editorStatus" role="status" aria-live="polite" class="text-sm mt-3 text-amber-100"></p>
+</section>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAXtyCX_thDf2tXQUVKeB_cEbEk5br7kY4",
-            authDomain: "rabsis-adventskalender.firebaseapp.com",
-            projectId: "rabsis-adventskalender",
-            storageBucket: "rabsis-adventskalender.firebasestorage.app",
-            messagingSenderId: "586773975957",
-            appId: "1:586773975957:web:92ecd923ee1c8064fa5c9c",
-            measurementId: "G-Z69Q2Z1SBG"
+<section id="previewBanner" class="hidden w-full panel mb-4 text-center">
+<p class="font-bold text-yellow-300">👀 Rabsi-Vorschau aktiv</p>
+<p class="text-sm">Du siehst die Spieleransicht. Nutze „Zurück zum Admin“, um weiter zu bearbeiten.</p>
+<button class="btn bg-purple-800 mt-3" onclick="togglePreview()">Zurück zum Admin</button>
+</section>
+
+<div id="calendarGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 w-full px-2"></div>
+</main>
+
+<div id="earlyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+<div class="bg-red-900 border-2 border-yellow-400 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl modal-enter">
+<div class="text-6xl mb-4">🙈</div><h2 class="title-font text-4xl text-yellow-400 mb-4">Halt, Stop!</h2>
+<p id="earlyText" class="text-white mb-6 text-lg">Noch nicht spicken! Dieses Türchen bleibt noch zu.</p>
+<button onclick="closeEarlyModal()" class="btn bg-yellow-400 text-red-900 w-full">Okay, ich warte brav 🥺</button>
+</div></div>
+
+<div id="messageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+<div class="bg-amber-50 border-4 border-yellow-500 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl modal-enter relative">
+<button onclick="closeMessageModal()" class="absolute top-3 right-4 text-gray-500 text-2xl">×</button>
+<div id="messageEmoji" class="text-7xl mb-6 mt-4">❤️</div>
+<h2 id="messageDay" class="title-font text-5xl text-red-800 mb-4">Tag X</h2>
+<p id="messageText" class="text-gray-800 text-xl font-medium italic leading-relaxed mb-4"></p>
+<div id="messageHintWrap" class="hidden mt-4 rounded-xl bg-amber-100 p-3 text-left">
+<p class="font-bold text-red-900">💡 Hinweis</p><p id="messageHint" class="text-gray-800"></p>
+</div>
+<div id="messageSolutionWrap" class="hidden mt-3 rounded-xl bg-red-100 p-3 text-left">
+<p class="font-bold text-red-900">🔐 Lösung (Admin)</p><p id="messageSolution" class="text-gray-800"></p>
+</div>
+</div></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script>
+'use strict';
+
+const CALENDAR_YEAR = 2026;
+const ADMIN_EMAIL = 'finn.rogozinskizwei@gmail.com'.toLowerCase();
+const PLAYER_EMAIL = 'stolzra08@gmail.com'.toLowerCase();
+const DOOR_LAYOUT = [17,4,22,9,12,1,15,8,24,5,19,2,11,7,21,14,3,20,6,18,10,23,13,16];
+const DATA_KEY = 'rabsi_calendar_admin_data_v1';
+const TEST_PROGRESS_KEY = 'rabsi_calendar_test_progress_v1';
+const PROGRESS_PREFIX = 'rabsi_calendar_progress_v1_';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAXtyCX_thDf2tXQUVKeB_cEbEk5br7kY4",
+  authDomain: "rabsis-adventskalender.firebaseapp.com",
+  projectId: "rabsis-adventskalender",
+  storageBucket: "rabsis-adventskalender.firebasestorage.app",
+  messagingSenderId: "586773975957",
+  appId: "1:586773975957:web:92ecd923ee1c8064fa5c9c",
+  measurementId: "G-Z69Q2Z1SBG"
+};
+
+const defaultMessages = {
+1:{emoji:"💌",text:"Du bist der wunderbarste Mensch in meinem Leben.",hint:"",solution:""},
+2:{emoji:"✨",text:"Dein Lächeln verzaubert jeden meiner Tage.",hint:"",solution:""},
+3:{emoji:"🥰",text:"Ich liebe es, wie du lachst.",hint:"",solution:""},
+4:{emoji:"☕",text:"Mit dir ist selbst der kälteste Wintertag warm.",hint:"",solution:""},
+5:{emoji:"🌟",text:"Du bist mein Lieblingsgedanke am Morgen.",hint:"",solution:""},
+6:{emoji:"🎅",text:"Einen wunderschönen Nikolaustag, mein Engel!",hint:"",solution:""},
+7:{emoji:"❤️",text:"Ich bin so dankbar, dass es dich gibt.",hint:"",solution:""},
+8:{emoji:"🎶",text:"Deine Stimme ist mein Lieblingsgeräusch.",hint:"",solution:""},
+9:{emoji:"🌹",text:"Du bist wunderschön, von innen und von außen.",hint:"",solution:""},
+10:{emoji:"🤗",text:"Eine virtuelle Umarmung, nur für dich!",hint:"",solution:""},
+11:{emoji:"💖",text:"Du machst mein Leben komplett.",hint:"",solution:""},
+12:{emoji:"🎄",text:"Halbzeit! Bald ist Weihnachten, Schatz.",hint:"",solution:""},
+13:{emoji:"😘",text:"Ich schicke dir tausend Küsse!",hint:"",solution:""},
+14:{emoji:"🌠",text:"Du bist mein größter Wunsch, der in Erfüllung ging.",hint:"",solution:""},
+15:{emoji:"🦋",text:"Du gibst mir immer noch Schmetterlinge im Bauch.",hint:"",solution:""},
+16:{emoji:"🎁",text:"Du bist das beste Geschenk meines Lebens.",hint:"",solution:""},
+17:{emoji:"💫",text:"Ich bin so stolz auf alles, was du tust.",hint:"",solution:""},
+18:{emoji:"🍪",text:"Süßer als jedes Weihnachtsplätzchen bist du!",hint:"",solution:""},
+19:{emoji:"💑",text:"Wir beide gegen den Rest der Welt.",hint:"",solution:""},
+20:{emoji:"❄️",text:"Selbst im Schnee bist du am heißesten!",hint:"",solution:""},
+21:{emoji:"💕",text:"Ich liebe dich mehr, als Worte sagen können.",hint:"",solution:""},
+22:{emoji:"🥂",text:"Auf viele weitere wunderschöne Weihnachten mit dir.",hint:"",solution:""},
+23:{emoji:"🤫",text:"Nur noch ein Mal schlafen...",hint:"",solution:""},
+24:{emoji:"🎄❤️",text:"Frohe Weihnachten, mein geliebter Schatz! Ich liebe dich über alles.",hint:"",solution:""}
+};
+
+function makeDefaultData() {
+  const puzzles = {};
+  for (let day=1; day<=24; day++) {
+    puzzles[day] = {...defaultMessages[day], released:true};
+  }
+  return {version:1, puzzles};
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(DATA_KEY);
+    if (!raw) return makeDefaultData();
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.puzzles) return makeDefaultData();
+    const base = makeDefaultData();
+    for (let day=1; day<=24; day++) {
+      const p = parsed.puzzles[day];
+      if (p && typeof p === 'object') {
+        base.puzzles[day] = {
+          emoji: typeof p.emoji === 'string' ? p.emoji : base.puzzles[day].emoji,
+          text: typeof p.text === 'string' ? p.text : base.puzzles[day].text,
+          hint: typeof p.hint === 'string' ? p.hint : '',
+          solution: typeof p.solution === 'string' ? p.solution : '',
+          released: typeof p.released === 'boolean' ? p.released : true
         };
+      }
+    }
+    return base;
+  } catch (e) {
+    console.warn('Gespeicherte Kalenderdaten konnten nicht gelesen werden.', e);
+    return makeDefaultData();
+  }
+}
 
-        const ADMIN_EMAIL = "finn.rogozinskizwei@gmail.com".toLowerCase();
-        const PLAYER_EMAIL = "stolzra08@gmail.com".toLowerCase();
+let appData = loadData();
+let currentUser = null;
+let isAdmin = false;
+let previewMode = false;
+let audioUnlocked = false;
+let openedDoors = [];
+let progressKey = '';
+let editorOpen = false;
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const googleProvider = new firebase.auth.GoogleAuthProvider();
-        googleProvider.setCustomParameters({ prompt: "select_account" });
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+googleProvider.setCustomParameters({prompt:'select_account'});
 
-        const calendarMessages = {
-            1: { emoji: "💌", text: "Du bist der wunderbarste Mensch in meinem Leben." },
-            2: { emoji: "✨", text: "Dein Lächeln verzaubert jeden meiner Tage." },
-            3: { emoji: "🥰", text: "Ich liebe es, wie du lachst." },
-            4: { emoji: "☕", text: "Mit dir ist selbst der kälteste Wintertag warm." },
-            5: { emoji: "🌟", text: "Du bist mein Lieblingsgedanke am Morgen." },
-            6: { emoji: "🎅", text: "Einen wunderschönen Nikolaustag, mein Engel!" },
-            7: { emoji: "❤️", text: "Ich bin so dankbar, dass es dich gibt." },
-            8: { emoji: "🎶", text: "Deine Stimme ist mein Lieblingsgeräusch." },
-            9: { emoji: "🌹", text: "Du bist wunderschön, von innen und von außen." },
-            10: { emoji: "🤗", text: "Eine virtuelle Umarmung, nur für dich!" },
-            11: { emoji: "💖", text: "Du machst mein Leben komplett." },
-            12: { emoji: "🎄", text: "Halbzeit! Bald ist Weihnachten, Schatz." },
-            13: { emoji: "😘", text: "Ich schicke dir tausend Küsse!" },
-            14: { emoji: "🌠", text: "Du bist mein größter Wunsch, der in Erfüllung ging." },
-            15: { emoji: "🦋", text: "Du gibst mir immer noch Schmetterlinge im Bauch." },
-            16: { emoji: "🎁", text: "Du bist das beste Geschenk meines Lebens." },
-            17: { emoji: "💫", text: "Ich bin so stolz auf alles, was du tust." },
-            18: { emoji: "🍪", text: "Süßer als jedes Weihnachtsplätzchen bist du!" },
-            19: { emoji: "💑", text: "Wir beide gegen den Rest der Welt." },
-            20: { emoji: "❄️", text: "Selbst im Schnee bist du am heißesten!" },
-            21: { emoji: "💕", text: "Ich liebe dich mehr, als Worte sagen können." },
-            22: { emoji: "🥂", text: "Auf viele weitere wunderschöne Weihnachten mit dir." },
-            23: { emoji: "🤫", text: "Nur noch ein Mal schlafen..." },
-            24: { emoji: "🎄❤️", text: "Frohe Weihnachten, mein geliebter Schatz! Ich liebe dich über alles." }
-        };
+const bgMusic = document.getElementById('bgMusic');
+const sfxSuccess = document.getElementById('sfxSuccess');
+const sfxError = document.getElementById('sfxError');
+const musicVol = document.getElementById('musicVol');
+const sfxVol = document.getElementById('sfxVol');
 
-        const doorLayout = [17, 4, 22, 9, 12, 1, 15, 8, 24, 5, 19, 2, 11, 7, 21, 14, 3, 20, 6, 18, 10, 23, 13, 16];
-        let openedDoors = JSON.parse(localStorage.getItem('rabsi_opened_doors')) || [];
+function saveData() {
+  try {
+    localStorage.setItem(DATA_KEY, JSON.stringify(appData));
+    return true;
+  } catch (e) {
+    alert('Speichern war nicht möglich. Prüfe den freien Speicherplatz deines Browsers.');
+    return false;
+  }
+}
+function getProgressKey() {
+  if (previewMode) return TEST_PROGRESS_KEY;
+  return PROGRESS_PREFIX + (currentUser ? currentUser.uid : 'guest');
+}
+function loadProgress() {
+  progressKey = getProgressKey();
+  try { openedDoors = JSON.parse(localStorage.getItem(progressKey) || '[]'); }
+  catch (_) { openedDoors = []; }
+  if (!Array.isArray(openedDoors)) openedDoors = [];
+}
+function saveProgress() {
+  try { localStorage.setItem(progressKey, JSON.stringify(openedDoors)); }
+  catch (e) { console.warn('Fortschritt konnte nicht gespeichert werden.', e); }
+}
+function applyVolumes() {
+  bgMusic.volume = Number(musicVol.value);
+  sfxSuccess.volume = Number(sfxVol.value);
+  sfxError.volume = Number(sfxVol.value);
+  document.getElementById('musicVolLabel').textContent = Math.round(musicVol.value*100)+'%';
+  document.getElementById('sfxVolLabel').textContent = Math.round(sfxVol.value*100)+'%';
+}
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  document.removeEventListener('click', unlockAudio);
+}
+function playSound(el) {
+  el.currentTime = 0;
+  const p = el.play();
+  if (p && p.catch) p.catch(()=>{});
+}
+function toggleMusic() {
+  if (bgMusic.paused) {
+    bgMusic.play().then(()=>document.getElementById('musicToggleBtn').textContent='⏸️ Musik pausieren').catch(()=>{});
+  } else {
+    bgMusic.pause();
+    document.getElementById('musicToggleBtn').textContent='▶️ Musik abspielen';
+  }
+}
+function toggleSettings() {
+  const panel = document.getElementById('settingsPanel');
+  panel.classList.toggle('hidden');
+  panel.classList.toggle('flex');
+}
+function createSnowflakes() {
+  const container = document.getElementById('snowContainer');
+  const chars = ['❄','❅','❆'];
+  const count = window.innerWidth < 600 ? 25 : 50;
+  for (let i=0; i<count; i++) {
+    const flake = document.createElement('div');
+    flake.className='snowflake';
+    flake.textContent=chars[Math.floor(Math.random()*chars.length)];
+    flake.style.left=Math.random()*100+'vw';
+    flake.style.animationDuration=(6+Math.random()*9)+'s';
+    flake.style.animationDelay=(-Math.random()*10)+'s';
+    flake.style.opacity=.2+Math.random()*.6;
+    flake.style.fontSize=(.8+Math.random()*1.2)+'em';
+    container.appendChild(flake);
+  }
+}
+function setStatus(text) {
+  document.getElementById('editorStatus').textContent = text;
+}
 
-        const bgMusic = document.getElementById('bgMusic');
-        const sfxSuccess = document.getElementById('sfxSuccess');
-        const sfxError = document.getElementById('sfxError');
-        const musicVolSlider = document.getElementById('musicVol');
-        const sfxVolSlider = document.getElementById('sfxVol');
+function initEditor() {
+  const select = document.getElementById('editDay');
+  select.innerHTML = '';
+  for (let day=1; day<=24; day++) {
+    const opt=document.createElement('option');
+    opt.value=day; opt.textContent='Türchen '+day;
+    select.appendChild(opt);
+  }
+  select.addEventListener('change',loadEditorFields);
+  document.getElementById('importFile').addEventListener('change',importData);
+  document.getElementById('testIgnoreDate').addEventListener('change',renderCalendar);
+  loadEditorFields();
+}
+function loadEditorFields() {
+  const day=Number(document.getElementById('editDay').value || 1);
+  const p=appData.puzzles[day];
+  document.getElementById('editEmoji').value=p.emoji;
+  document.getElementById('editText').value=p.text;
+  document.getElementById('editHint').value=p.hint;
+  document.getElementById('editSolution').value=p.solution;
+  document.getElementById('editReleased').checked=p.released;
+  setStatus('Türchen '+day+' geladen.');
+}
+function savePuzzle() {
+  const day=Number(document.getElementById('editDay').value);
+  appData.puzzles[day]={
+    emoji:document.getElementById('editEmoji').value.trim() || '❤️',
+    text:document.getElementById('editText').value,
+    hint:document.getElementById('editHint').value,
+    solution:document.getElementById('editSolution').value,
+    released:document.getElementById('editReleased').checked
+  };
+  if (saveData()) {
+    setStatus('Türchen '+day+' wurde lokal gespeichert.');
+    renderCalendar();
+  }
+}
+function resetPuzzleData() {
+  if (!confirm('Alle bearbeiteten Rätsel, Hinweise, Lösungen und Freigaben auf Standard zurücksetzen?')) return;
+  appData=makeDefaultData();
+  saveData();
+  loadEditorFields();
+  renderCalendar();
+  setStatus('Standardtexte wiederhergestellt.');
+}
+function toggleEditor() {
+  editorOpen=!editorOpen;
+  document.getElementById('editorPanel').classList.toggle('hidden',!editorOpen);
+  if (editorOpen) loadEditorFields();
+}
+function togglePreview() {
+  if (!isAdmin) return;
+  previewMode=!previewMode;
+  document.getElementById('adminToolbar').classList.toggle('hidden',previewMode);
+  document.getElementById('editorPanel').classList.add('hidden');
+  editorOpen=false;
+  document.getElementById('previewBanner').classList.toggle('hidden',!previewMode);
+  document.getElementById('previewBtn').textContent=previewMode?'Zurück zum Admin':'👀 Rabsi-Vorschau starten';
+  document.getElementById('subtitle').textContent=previewMode?'Vorschau: So sieht der Kalender für Rabsi aus ❤️':'Jeden Tag eine kleine Überraschung für dich ❤️';
+  loadProgress();
+  renderCalendar();
+}
+function exportData() {
+  const payload={
+    exportedAt:new Date().toISOString(),
+    note:'Diese Datei enthält clientseitige Rätseltexte und Lösungen. Sie sind nicht geheim.',
+    calendar:appData
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='rabsis-adventskalender-sicherung.json';
+  document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+  setStatus('JSON-Sicherung wurde exportiert.');
+}
+async function importData(event) {
+  const file=event.target.files && event.target.files[0];
+  if (!file) return;
+  try {
+    const parsed=JSON.parse(await file.text());
+    const incoming=parsed.calendar || parsed;
+    if (!incoming.puzzles || typeof incoming.puzzles!=='object') throw new Error('Datei enthält keine gültigen Rätseldaten.');
+    const next=makeDefaultData();
+    for (let day=1;day<=24;day++) {
+      const p=incoming.puzzles[day];
+      if (!p || typeof p!=='object') continue;
+      next.puzzles[day]={
+        emoji:typeof p.emoji==='string'?p.emoji:'❤️',
+        text:typeof p.text==='string'?p.text:'',
+        hint:typeof p.hint==='string'?p.hint:'',
+        solution:typeof p.solution==='string'?p.solution:'',
+        released:typeof p.released==='boolean'?p.released:false
+      };
+    }
+    if (!confirm('JSON-Daten importieren und aktuelle lokale Rätseldaten ersetzen?')) return;
+    appData=next;
+    if (saveData()) {
+      loadEditorFields();
+      renderCalendar();
+      setStatus('JSON-Daten erfolgreich importiert.');
+    }
+  } catch (e) {
+    alert('Import fehlgeschlagen: '+e.message);
+  } finally {
+    event.target.value='';
+  }
+}
 
-        function applyVolumes() {
-            bgMusic.volume = musicVolSlider.value;
-            sfxSuccess.volume = sfxVolSlider.value;
-            sfxError.volume = sfxVolSlider.value;
-            document.getElementById('musicVolLabel').innerText = Math.round(musicVolSlider.value * 100) + '%';
-            document.getElementById('sfxVolLabel').innerText = Math.round(sfxVolSlider.value * 100) + '%';
-        }
+function renderCalendar() {
+  const grid=document.getElementById('calendarGrid');
+  grid.innerHTML='';
+  DOOR_LAYOUT.forEach(day=>{
+    const p=appData.puzzles[day];
+    const isOpened=openedDoors.includes(day);
+    const wrapper=document.createElement('div');
+    wrapper.className='door-container';
+    const door=document.createElement('div');
+    door.className='door'+(isOpened?' open ':' ')+(day===24?'door-24':'');
+    door.id='door-'+day;
+    door.setAttribute('role','button');
+    door.setAttribute('tabindex','0');
+    door.setAttribute('aria-label','Türchen '+day);
+    door.addEventListener('click',()=>handleDoorClick(day));
+    door.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();handleDoorClick(day);}});
+    const front=document.createElement('div');
+    front.className='door-front';
+    front.textContent=day;
+    const back=document.createElement('div');
+    back.className='door-back';
+    const emoji=document.createElement('span');
+    emoji.className='text-4xl';
+    emoji.textContent=p.emoji;
+    const status=document.createElement('span');
+    status.className='text-xs font-bold';
+    status.textContent=p.released?'':'🔒 Noch nicht freigegeben';
+    back.append(emoji,status);
+    door.append(front,back);
+    wrapper.appendChild(door);
+    grid.appendChild(wrapper);
+    if (isAdmin && !previewMode && !p.released) {
+      wrapper.style.opacity='.55';
+      wrapper.title='Für Rabsi nicht freigegeben';
+    }
+  });
+}
+function handleDoorClick(day) {
+  const p=appData.puzzles[day];
+  const ignoreDate=isAdmin && !previewMode && document.getElementById('testIgnoreDate').checked;
+  if (isAdmin && !previewMode) {
+    if (!p.released) {
+      const action=confirm('Dieses Türchen ist nicht freigegeben. Für den Admin-Test trotzdem öffnen?');
+      if (!action) {playSound(sfxError);return;}
+    }
+    if (ignoreDate) {openDoor(day);return;}
+  }
+  if (!p.released) {
+    document.getElementById('earlyText').textContent='Dieses Türchen ist noch nicht freigegeben. ❤️';
+    showEarlyModal();playSound(sfxError);return;
+  }
+  const today=new Date();
+  const unlockDate=new Date(CALENDAR_YEAR,11,day);
+  if (today>=unlockDate || ignoreDate) openDoor(day);
+  else {
+    document.getElementById('earlyText').textContent='Noch nicht spicken! Dieses Türchen bleibt noch zu. 🥺';
+    showEarlyModal();playSound(sfxError);
+  }
+}
+function openDoor(day) {
+  const door=document.getElementById('door-'+day);
+  if (!openedDoors.includes(day)) {
+    openedDoors.push(day);
+    saveProgress();
+  }
+  if (door) door.classList.add('open');
+  playSound(sfxSuccess);
+  setTimeout(()=>showMessageModal(day),350);
+}
+function showMessageModal(day) {
+  const p=appData.puzzles[day];
+  document.getElementById('messageDay').textContent='Türchen '+day;
+  document.getElementById('messageText').textContent=p.text;
+  document.getElementById('messageEmoji').textContent=p.emoji;
+  const hintWrap=document.getElementById('messageHintWrap');
+  hintWrap.classList.toggle('hidden',!p.hint.trim());
+  document.getElementById('messageHint').textContent=p.hint;
+  const solutionWrap=document.getElementById('messageSolutionWrap');
+  const showSolution=isAdmin && !previewMode && p.solution.trim();
+  solutionWrap.classList.toggle('hidden',!showSolution);
+  document.getElementById('messageSolution').textContent=p.solution;
+  document.getElementById('messageModal').classList.remove('hidden');
+}
+function closeMessageModal(){document.getElementById('messageModal').classList.add('hidden');}
+function showEarlyModal(){document.getElementById('earlyModal').classList.remove('hidden');}
+function closeEarlyModal(){document.getElementById('earlyModal').classList.add('hidden');}
+function resetCurrentProgress() {
+  if (!confirm('Den Fortschritt für diese Ansicht wirklich zurücksetzen?')) return;
+  openedDoors=[];
+  saveProgress();
+  renderCalendar();
+  document.getElementById('settingsPanel').classList.add('hidden');
+  document.getElementById('settingsPanel').classList.remove('flex');
+}
+function updateAuthUI(user) {
+  currentUser=user;
+  const login=document.getElementById('loginSection');
+  const calendar=document.getElementById('calendarSection');
+  const logout=document.getElementById('logoutBtn');
+  if (!user) {
+    isAdmin=false;
+    previewMode=false;
+    login.classList.remove('hidden');
+    calendar.classList.add('hidden');
+    calendar.classList.remove('flex');
+    logout.classList.add('hidden');
+    document.getElementById('adminToolbar').classList.add('hidden');
+    document.getElementById('editorPanel').classList.add('hidden');
+    return;
+  }
+  const email=(user.email||'').toLowerCase();
+  if (email!==ADMIN_EMAIL && email!==PLAYER_EMAIL) {
+    auth.signOut().catch(()=>{});
+    document.getElementById('loginStatus').textContent='Dieses Google-Konto ist für den Kalender nicht freigeschaltet.';
+    return;
+  }
+  isAdmin=email===ADMIN_EMAIL;
+  previewMode=false;
+  login.classList.add('hidden');
+  calendar.classList.remove('hidden');
+  calendar.classList.add('flex');
+  logout.classList.remove('hidden');
+  document.getElementById('adminToolbar').classList.toggle('hidden',!isAdmin);
+  document.getElementById('editorPanel').classList.add('hidden');
+  document.getElementById('previewBanner').classList.add('hidden');
+  document.getElementById('previewBtn').textContent='👀 Rabsi-Vorschau starten';
+  loadProgress();
+  renderCalendar();
+}
+async function signInWithGoogle() {
+  const status=document.getElementById('loginStatus');
+  const button=document.getElementById('googleLoginBtn');
+  status.textContent='Google-Anmeldung wird geöffnet …';
+  button.disabled=true;
+  try { await auth.signInWithPopup(googleProvider); }
+  catch(e) {
+    console.error(e);
+    status.textContent='Anmeldung fehlgeschlagen: '+(e.code||'unbekannt')+' – '+(e.message||'');
+  } finally {button.disabled=false;}
+}
 
-        applyVolumes();
-        musicVolSlider.addEventListener('input', applyVolumes);
-        sfxVolSlider.addEventListener('input', applyVolumes);
-
-        function unlockAudioContext() {
-            if (audioUnlocked) return;
-            [bgMusic, sfxSuccess, sfxError].forEach(audio => {
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        audio.pause();
-                        audio.currentTime = 0;
-                    }).catch(() => {});
-                }
-            });
-            audioUnlocked = true;
-            document.removeEventListener('click', unlockAudioContext);
-            document.removeEventListener('touchstart', unlockAudioContext);
-        }
-
-        document.addEventListener('click', unlockAudioContext, { once: true });
-        document.addEventListener('touchstart', unlockAudioContext, { once: true });
-
-        function toggleSettings() {
-            const panel = document.getElementById('settingsPanel');
-            panel.classList.toggle('hidden');
-            panel.classList.toggle('flex');
-        }
-
-        function updateMusicButtonUI(isPlaying) {
-            const btn = document.getElementById('musicToggleBtn');
-            if (isPlaying) {
-                btn.innerHTML = '⏸️ Musik pausieren';
-                btn.classList.replace('bg-green-700', 'bg-red-800');
-                btn.classList.replace('hover:bg-green-600', 'hover:bg-red-700');
-            } else {
-                btn.innerHTML = '▶️ Musik abspielen';
-                btn.classList.replace('bg-red-800', 'bg-green-700');
-                btn.classList.replace('hover:bg-red-700', 'hover:bg-green-600');
-            }
-        }
-
-        function toggleMusic() {
-            if (bgMusic.paused) {
-                bgMusic.play()
-                    .then(() => updateMusicButtonUI(true))
-                    .catch(error => console.log("Audio Play blockiert:", error));
-            } else {
-                bgMusic.pause();
-                updateMusicButtonUI(false);
-            }
-        }
-
-        function playSound(audioEl) {
-            audioEl.currentTime = 0;
-            const playPromise = audioEl.play();
-            if (playPromise !== undefined) playPromise.catch(error => console.warn("SFX Error:", error));
-        }
-
-        function resetProgress() {
-            localStorage.removeItem('rabsi_opened_doors');
-            openedDoors = [];
-            document.querySelectorAll('.door').forEach(door => door.classList.remove('open'));
-            playSound(sfxError);
-            toggleSettings();
-        }
-
-        function initApp() {
-            createSnowflakes();
-            document.getElementById('loginSection').classList.remove('hidden');
-            document.getElementById('googleLoginBtn').addEventListener('click', signInWithGoogle);
-            document.getElementById('logoutBtn').addEventListener('click', signOutUser);
-
-            auth.onAuthStateChanged(async user => {
-                if (!user) {
-                    currentUser = null;
-                    isAuthenticated = false;
-                    document.getElementById('calendarSection').classList.add('hidden');
-                    document.getElementById('calendarSection').classList.remove('flex');
-                    document.getElementById('loginSection').classList.remove('hidden');
-                    document.getElementById('loginStatus').textContent = '';
-                    document.getElementById('logoutBtn').classList.add('hidden');
-                    return;
-                }
-
-                const email = (user.email || '').toLowerCase();
-                if (email !== ADMIN_EMAIL && email !== PLAYER_EMAIL) {
-                    await auth.signOut();
-                    document.getElementById('loginStatus').textContent =
-                        'Dieses Google-Konto ist für den Kalender nicht freigeschaltet.';
-                    return;
-                }
-
-                currentUser = user;
-                isAuthenticated = true;
-                document.getElementById('loginSection').classList.add('hidden');
-                document.getElementById('logoutBtn').classList.remove('hidden');
-                showCalendar();
-            });
-        }
-
-        async function signInWithGoogle() {
-            const status = document.getElementById('loginStatus');
-            const button = document.getElementById('googleLoginBtn');
-            status.textContent = 'Google-Anmeldung wird geöffnet …';
-            button.disabled = true;
-
-            try {
-                await auth.signInWithPopup(googleProvider);
-            } catch (error) {
-                console.error('Google-Anmeldung fehlgeschlagen:', error);
-                status.textContent = 'Fehler: ' + (error.code || 'unbekannt') +
-                    ' – ' + (error.message || 'Keine weitere Beschreibung');
-            } finally {
-                button.disabled = false;
-            }
-        }
-
-        async function signOutUser() {
-            try {
-                await auth.signOut();
-            } catch (error) {
-                console.error('Abmelden fehlgeschlagen:', error);
-                document.getElementById('loginStatus').textContent =
-                    'Abmelden war nicht möglich. Bitte erneut versuchen.';
-            }
-        }
-
-        function showCalendar() {
-            if (!currentUser || !isAuthenticated) return;
-            document.getElementById('calendarSection').classList.remove('hidden');
-            document.getElementById('calendarSection').classList.add('flex');
-
-            const grid = document.getElementById('calendarGrid');
-            grid.innerHTML = '';
-
-            doorLayout.forEach(dayNumber => {
-                const doorDiv = document.createElement('div');
-                doorDiv.className = 'door-container';
-                const isOpened = openedDoors.includes(dayNumber);
-                const extraClass = dayNumber === 24 ? 'door-24' : '';
-
-                doorDiv.innerHTML = `
-                    <div class="door ${isOpened ? 'open' : ''} ${extraClass}" id="door-${dayNumber}" onclick="handleDoorClick(${dayNumber})">
-                        <div class="door-front">${dayNumber}</div>
-                        <div class="door-back flex items-center justify-center">
-                            <span class="text-4xl">${calendarMessages[dayNumber].emoji}</span>
-                        </div>
-                    </div>
-                `;
-                grid.appendChild(doorDiv);
-            });
-        }
-
-        function handleDoorClick(dayNumber) {
-            const today = new Date();
-            const unlockDate = new Date(CALENDAR_YEAR, 11, dayNumber);
-            if (isAuthenticated && today >= unlockDate) {
-                openDoor(dayNumber);
-            } else {
-                playSound(sfxError);
-                showEarlyModal();
-            }
-        }
-
-        function openDoor(dayNumber) {
-            const doorElement = document.getElementById(`door-${dayNumber}`);
-            if (openedDoors.includes(dayNumber)) {
-                playSound(sfxSuccess);
-                showMessageModal(dayNumber);
-                return;
-            }
-
-            doorElement.classList.add('open');
-            playSound(sfxSuccess);
-            openedDoors.push(dayNumber);
-            localStorage.setItem('rabsi_opened_doors', JSON.stringify(openedDoors));
-            setTimeout(() => showMessageModal(dayNumber), 600);
-        }
-
-        function showEarlyModal() {
-            document.getElementById('earlyModal').classList.remove('hidden');
-        }
-
-        function closeEarlyModal() {
-            document.getElementById('earlyModal').classList.add('hidden');
-        }
-
-        function showMessageModal(dayNumber) {
-            const data = calendarMessages[dayNumber];
-            document.getElementById('messageDay').innerText = `Türchen ${dayNumber}`;
-            document.getElementById('messageText').innerText = data.text;
-            document.getElementById('messageEmoji').innerText = data.emoji;
-            document.getElementById('messageModal').classList.remove('hidden');
-        }
-
-        function closeMessageModal() {
-            document.getElementById('messageModal').classList.add('hidden');
-        }
-
-        function createSnowflakes() {
-            const container = document.getElementById('snowContainer');
-            const snowflakeChars = ['❄', '❅', '❆'];
-            const count = window.innerWidth < 600 ? 25 : 50;
-
-            for (let i = 0; i < count; i++) {
-                const flake = document.createElement('div');
-                flake.className = 'snowflake';
-                flake.innerText = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
-                flake.style.left = `${Math.random() * 100}vw`;
-                flake.style.animationDuration = `${6 + Math.random() * 9}s`;
-                flake.style.animationDelay = `${-Math.random() * 10}s`;
-                flake.style.opacity = 0.2 + Math.random() * 0.6;
-                flake.style.fontSize = `${0.8 + Math.random() * 1.2}em`;
-                container.appendChild(flake);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', initApp);
-    </script>
+document.addEventListener('DOMContentLoaded',()=>{
+  createSnowflakes();
+  applyVolumes();
+  musicVol.addEventListener('input',applyVolumes);
+  sfxVol.addEventListener('input',applyVolumes);
+  document.addEventListener('click',unlockAudio,{once:true});
+  document.getElementById('googleLoginBtn').addEventListener('click',signInWithGoogle);
+  document.getElementById('logoutBtn').addEventListener('click',()=>auth.signOut());
+  initEditor();
+  auth.onAuthStateChanged(updateAuthUI);
+});
+</script>
 </body>
 </html>
