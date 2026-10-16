@@ -67,18 +67,18 @@ input[type=range]{accent-color:#fbbf24}
 
 <section id="adminToolbar" class="hidden w-full panel mb-6">
 <div class="flex flex-wrap items-center justify-between gap-3">
-<div><h2 class="text-xl font-bold text-yellow-300">🛠️ Adminbereich</h2><p class="text-sm text-amber-100">Bearbeitung und Testwerkzeuge</p></div>
+<div><h2 class="text-xl font-bold text-yellow-300">🛠️ Adminbereich</h2><p class="text-sm text-amber-100">Bearbeitung, Vorschau und Cloud-Speicherung</p></div>
 <div class="flex flex-wrap gap-2">
 <button class="btn bg-amber-500 text-red-950" onclick="toggleEditor()">✏️ Rätsel bearbeiten</button>
 <button class="btn bg-purple-800" onclick="togglePreview()" id="previewBtn">👀 Rabsi-Vorschau starten</button>
 </div>
 </div>
-<p id="adminNotice" class="text-xs text-amber-200 mt-3">Lokale Testversion: Änderungen gelten nur in diesem Browser.</p>
+<p id="adminNotice" class="text-xs text-amber-200 mt-3">Verbinde mit Firebase …</p>
 </section>
 
 <section id="editorPanel" class="hidden w-full panel mb-6">
 <h2 class="text-2xl text-yellow-300 font-bold mb-2">Rätsel-Editor</h2>
-<p class="text-sm text-amber-100 mb-4">Änderungen werden lokal gespeichert. Lösungen sind im öffentlichen Quellcode nicht geheim.</p>
+<p class="text-sm text-amber-100 mb-4">Änderungen werden zentral in Firebase gespeichert. Entwürfe und Lösungen sind durch die Firestore-Regeln auf dein Admin-Konto beschränkt.</p>
 <div class="grid md:grid-cols-2 gap-4">
 <div>
 <label class="small-label" for="editDay">Türchen auswählen</label>
@@ -97,7 +97,7 @@ input[type=range]{accent-color:#fbbf24}
 <textarea id="editHint" class="field" rows="2"></textarea>
 </div>
 <div class="md:col-span-2">
-<label class="small-label" for="editSolution">Lösung (nicht geheim!)</label>
+<label class="small-label" for="editSolution">Lösung (nur Admin)</label>
 <textarea id="editSolution" class="field" rows="2"></textarea>
 </div>
 <div class="flex items-center gap-2">
@@ -155,6 +155,7 @@ input[type=range]{accent-color:#fbbf24}
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 'use strict';
 
@@ -237,7 +238,7 @@ function loadData() {
   }
 }
 
-let appData = loadData();
+let appData = makeDefaultData();
 let currentUser = null;
 let isAdmin = false;
 let previewMode = false;
@@ -245,9 +246,13 @@ let audioUnlocked = false;
 let openedDoors = [];
 let progressKey = '';
 let editorOpen = false;
+let cloudUnsubscribe = null;
+let cloudReady = false;
+let cloudLoading = false;
 
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+const db = firebase.firestore();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 googleProvider.setCustomParameters({prompt:'select_account'});
 
@@ -266,6 +271,7 @@ function saveData() {
     return false;
   }
 }
+
 function getProgressKey() {
   if (previewMode) return TEST_PROGRESS_KEY;
   return PROGRESS_PREFIX + (currentUser ? currentUser.uid : 'guest');
@@ -346,6 +352,7 @@ function initEditor() {
 function loadEditorFields() {
   const day=Number(document.getElementById('editDay').value || 1);
   const p=appData.puzzles[day];
+  if (!p) return;
   document.getElementById('editEmoji').value=p.emoji;
   document.getElementById('editText').value=p.text;
   document.getElementById('editHint').value=p.hint;
@@ -353,28 +360,48 @@ function loadEditorFields() {
   document.getElementById('editReleased').checked=p.released;
   setStatus('Türchen '+day+' geladen.');
 }
-function savePuzzle() {
+
+async function savePuzzle() {
+  if (!isAdmin || !currentUser) {
+    setStatus('Nur das Admin-Konto darf Rätsel speichern.');
+    return;
+  }
   const day=Number(document.getElementById('editDay').value);
-  appData.puzzles[day]={
+  const puzzle={
     emoji:document.getElementById('editEmoji').value.trim() || '❤️',
     text:document.getElementById('editText').value,
     hint:document.getElementById('editHint').value,
     solution:document.getElementById('editSolution').value,
     released:document.getElementById('editReleased').checked
   };
-  if (saveData()) {
-    setStatus('Türchen '+day+' wurde lokal gespeichert.');
+  appData.puzzles[day]=puzzle;
+  try {
+    await writePuzzleToCloud(day, puzzle);
+    saveData();
     renderCalendar();
+    setStatus('Türchen '+day+' wurde in Firebase gespeichert. Änderungen sind auch auf anderen Geräten verfügbar.');
+  } catch (e) {
+    console.error('Cloud-Speicherung fehlgeschlagen:', e);
+    setStatus('Cloud-Speicherung fehlgeschlagen: '+(e.message || e.code || 'Unbekannter Fehler')+'. Bitte prüfe die Firestore-Regeln und deine Verbindung.');
   }
 }
-function resetPuzzleData() {
-  if (!confirm('Alle bearbeiteten Rätsel, Hinweise, Lösungen und Freigaben auf Standard zurücksetzen?')) return;
+
+async function resetPuzzleData() {
+  if (!isAdmin) return;
+  if (!confirm('Alle Rätseltexte, Hinweise, Lösungen und Freigaben in Firebase auf Standard zurücksetzen? Diese Änderung gilt für alle Geräte.')) return;
   appData=makeDefaultData();
-  saveData();
-  loadEditorFields();
-  renderCalendar();
-  setStatus('Standardtexte wiederhergestellt.');
+  try {
+    await writeAllPuzzlesToCloud();
+    saveData();
+    loadEditorFields();
+    renderCalendar();
+    setStatus('Alle 24 Türchen wurden in Firebase auf Standard zurückgesetzt.');
+  } catch (e) {
+    console.error(e);
+    setStatus('Zurücksetzen in Firebase fehlgeschlagen: '+(e.message || e.code || 'Unbekannter Fehler'));
+  }
 }
+
 function toggleEditor() {
   editorOpen=!editorOpen;
   document.getElementById('editorPanel').classList.toggle('hidden',!editorOpen);
@@ -395,7 +422,7 @@ function togglePreview() {
 function exportData() {
   const payload={
     exportedAt:new Date().toISOString(),
-    note:'Diese Datei enthält clientseitige Rätseltexte und Lösungen. Sie sind nicht geheim.',
+    note:'Admin-Backup der Rätseltexte, Hinweise, Lösungen und Freigaben.',
     calendar:appData
   };
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
@@ -426,17 +453,148 @@ async function importData(event) {
         released:typeof p.released==='boolean'?p.released:false
       };
     }
-    if (!confirm('JSON-Daten importieren und aktuelle lokale Rätseldaten ersetzen?')) return;
+    if (!confirm('JSON-Daten importieren und aktuelle Rätseldaten in Firebase ersetzen? Diese Änderung gilt für alle Geräte.')) return;
     appData=next;
-    if (saveData()) {
+    try {
+      await writeAllPuzzlesToCloud();
+      saveData();
       loadEditorFields();
       renderCalendar();
-      setStatus('JSON-Daten erfolgreich importiert.');
+      setStatus('JSON-Daten wurden in Firebase importiert und sind auf allen Geräten verfügbar.');
+    } catch (e) {
+      console.error(e);
+      setStatus('Import konnte nicht in Firebase gespeichert werden: '+(e.message || e.code || 'Unbekannter Fehler'));
     }
   } catch (e) {
     alert('Import fehlgeschlagen: '+e.message);
   } finally {
     event.target.value='';
+  }
+}
+
+function cleanPuzzle(data, fallback) {
+  return {
+    emoji: typeof data.emoji === 'string' ? data.emoji : fallback.emoji,
+    text: typeof data.text === 'string' ? data.text : fallback.text,
+    hint: typeof data.hint === 'string' ? data.hint : '',
+    solution: typeof data.solution === 'string' ? data.solution : '',
+    released: typeof data.released === 'boolean' ? data.released : false
+  };
+}
+
+async function writePuzzleToCloud(day, puzzle) {
+  if (!isAdmin) throw new Error('Keine Admin-Berechtigung.');
+  const adminData = {
+    emoji: puzzle.emoji,
+    text: puzzle.text,
+    hint: puzzle.hint,
+    solution: puzzle.solution,
+    released: !!puzzle.released,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  await db.collection('adminPuzzles').doc(String(day)).set(adminData);
+
+  const publicRef = db.collection('publicPuzzles').doc(String(day));
+  if (puzzle.released) {
+    await publicRef.set({
+      emoji: puzzle.emoji,
+      text: puzzle.text,
+      hint: puzzle.hint,
+      released: true,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } else {
+    await publicRef.delete();
+  }
+}
+
+async function writeAllPuzzlesToCloud() {
+  if (!isAdmin) throw new Error('Keine Admin-Berechtigung.');
+  for (let day=1; day<=24; day++) {
+    await writePuzzleToCloud(day, appData.puzzles[day]);
+  }
+}
+
+async function initializeCloudForAdmin() {
+  const snapshot = await db.collection('adminPuzzles').get();
+  if (snapshot.empty) {
+    // Einmalige Erstbefüllung: vorhandene lokale Inhalte werden übernommen.
+    for (let day=1; day<=24; day++) {
+      await writePuzzleToCloud(day, appData.puzzles[day]);
+    }
+  }
+}
+
+function stopCloudListener() {
+  if (typeof cloudUnsubscribe === 'function') cloudUnsubscribe();
+  cloudUnsubscribe = null;
+  cloudReady = false;
+}
+
+async function startCloudForUser(user) {
+  stopCloudListener();
+  cloudLoading = true;
+  document.getElementById('adminNotice').textContent = 'Verbinde mit Firebase …';
+  try {
+    if (isAdmin) {
+      // Lokale Sicherung nur nach erfolgreicher Admin-Anmeldung laden.
+      appData = loadData();
+      await initializeCloudForAdmin();
+      cloudUnsubscribe = db.collection('adminPuzzles').onSnapshot(snapshot => {
+        const next = makeDefaultData();
+        snapshot.forEach(doc => {
+          const day = Number(doc.id);
+          if (day >= 1 && day <= 24) next.puzzles[day] = cleanPuzzle(doc.data(), next.puzzles[day]);
+        });
+        appData = next;
+        saveData();
+        cloudReady = true;
+        cloudLoading = false;
+        document.getElementById('adminNotice').textContent = 'Mit Firebase verbunden. Änderungen werden zentral gespeichert und auf anderen Geräten übernommen.';
+        renderCalendar();
+        if (!editorOpen) loadEditorFields();
+      }, error => {
+        console.error('Admin-Cloud-Lesen fehlgeschlagen:', error);
+        cloudLoading = false;
+        setStatus('Firebase konnte die Admin-Rätsel nicht laden: '+(error.message || error.code));
+      });
+    } else {
+      // Spielerkonto startet ohne lokale Admin-Entwürfe oder Lösungen.
+      appData = makeDefaultData();
+      cloudUnsubscribe = db.collection('publicPuzzles')
+        .where('released', '==', true)
+        .onSnapshot(snapshot => {
+          const next = makeDefaultData();
+          for (let day=1; day<=24; day++) next.puzzles[day].released = false;
+          snapshot.forEach(doc => {
+            const day = Number(doc.id);
+            if (day >= 1 && day <= 24) {
+              const data = doc.data();
+              next.puzzles[day] = {
+                emoji: typeof data.emoji === 'string' ? data.emoji : '❤️',
+                text: typeof data.text === 'string' ? data.text : '',
+                hint: typeof data.hint === 'string' ? data.hint : '',
+                solution: '',
+                released: data.released === true
+              };
+            }
+          });
+          appData = next;
+          cloudReady = true;
+          cloudLoading = false;
+          renderCalendar();
+        }, error => {
+          console.error('Öffentliche Rätsel konnten nicht geladen werden:', error);
+          cloudLoading = false;
+          document.getElementById('loginStatus').textContent = 'Kalenderdaten konnten nicht geladen werden. Bitte später erneut anmelden.';
+        });
+    }
+  } catch (e) {
+    cloudLoading = false;
+    console.error('Firebase-Verbindung fehlgeschlagen:', e);
+    const message = 'Firebase-Verbindung fehlgeschlagen: '+(e.message || e.code || 'Unbekannter Fehler');
+    if (isAdmin) setStatus(message);
+    else document.getElementById('loginStatus').textContent = message;
   }
 }
 
@@ -534,7 +692,9 @@ function resetCurrentProgress() {
   document.getElementById('settingsPanel').classList.add('hidden');
   document.getElementById('settingsPanel').classList.remove('flex');
 }
-function updateAuthUI(user) {
+
+async function updateAuthUI(user) {
+  stopCloudListener();
   currentUser=user;
   const login=document.getElementById('loginSection');
   const calendar=document.getElementById('calendarSection');
@@ -542,6 +702,7 @@ function updateAuthUI(user) {
   if (!user) {
     isAdmin=false;
     previewMode=false;
+    cloudLoading=false;
     login.classList.remove('hidden');
     calendar.classList.add('hidden');
     calendar.classList.remove('flex');
@@ -552,7 +713,7 @@ function updateAuthUI(user) {
   }
   const email=(user.email||'').toLowerCase();
   if (email!==ADMIN_EMAIL && email!==PLAYER_EMAIL) {
-    auth.signOut().catch(()=>{});
+    await auth.signOut().catch(()=>{});
     document.getElementById('loginStatus').textContent='Dieses Google-Konto ist für den Kalender nicht freigeschaltet.';
     return;
   }
@@ -566,9 +727,15 @@ function updateAuthUI(user) {
   document.getElementById('editorPanel').classList.add('hidden');
   document.getElementById('previewBanner').classList.add('hidden');
   document.getElementById('previewBtn').textContent='👀 Rabsi-Vorschau starten';
+  document.getElementById('subtitle').textContent='Jeden Tag eine kleine Überraschung für dich ❤️';
   loadProgress();
+  if (isAdmin) {
+    document.getElementById('adminNotice').textContent='Verbinde mit Firebase …';
+  }
   renderCalendar();
+  await startCloudForUser(user);
 }
+
 async function signInWithGoogle() {
   const status=document.getElementById('loginStatus');
   const button=document.getElementById('googleLoginBtn');
@@ -590,7 +757,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('googleLoginBtn').addEventListener('click',signInWithGoogle);
   document.getElementById('logoutBtn').addEventListener('click',()=>auth.signOut());
   initEditor();
-  auth.onAuthStateChanged(updateAuthUI);
+  auth.onAuthStateChanged(user => { updateAuthUI(user).catch(e => console.error(e)); });
 });
 </script>
 </body>
