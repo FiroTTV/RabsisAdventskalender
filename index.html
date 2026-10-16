@@ -16,6 +16,7 @@
             min-height: 100vh;
             overflow-x: hidden;
             margin: 0;
+            -webkit-tap-highlight-color: transparent; /* Entfernt das blaue Flackern auf Mobile */
         }
 
         .title-font {
@@ -56,7 +57,7 @@
             width: 100%;
             aspect-ratio: 1 / 1;
             position: relative;
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bounce-Effekt beim Öffnen */
             transform-style: preserve-3d;
             cursor: pointer;
         }
@@ -83,6 +84,11 @@
             color: #fbbf24;
             font-size: 2rem;
             font-weight: bold;
+            transition: filter 0.3s;
+        }
+
+        .door:hover .door-front {
+            filter: brightness(1.1);
         }
 
         .door-front::before {
@@ -118,11 +124,11 @@
         }
 
         .modal-enter {
-            animation: popIn 0.3s ease-out forwards;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
         
         @keyframes popIn {
-            0% { transform: scale(0.9); opacity: 0; }
+            0% { transform: scale(0.8); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
 
@@ -133,36 +139,39 @@
 </head>
 <body class="relative flex flex-col items-center justify-center p-4">
 
-    <!-- Verlässliche MP3/WAV-Links von Wikimedia Commons / öffentlichen Archiven -->
-    <audio id="bgMusic" loop>
+    <!-- Verlässliche MP3/WAV-Links von Wikimedia Commons -->
+    <audio id="bgMusic" loop preload="auto">
         <source src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Jingle_Bells_3.ogg" type="audio/ogg">
     </audio>
-    <audio id="sfxSuccess">
+    <audio id="sfxSuccess" preload="auto">
         <source src="https://upload.wikimedia.org/wikipedia/commons/b/b5/133003__kyster__bell-ding.wav" type="audio/wav">
     </audio>
-    <audio id="sfxError">
+    <audio id="sfxError" preload="auto">
         <source src="https://upload.wikimedia.org/wikipedia/commons/4/41/Error_beep.ogg" type="audio/ogg">
     </audio>
 
     <div class="fixed top-4 right-4 z-50 flex flex-col items-end gap-2">
-        <button id="settingsToggleBtn" onclick="toggleSettings()" class="bg-white/20 hover:bg-white/30 backdrop-blur-md border border-yellow-400/50 text-yellow-400 px-4 py-2 rounded-full font-bold shadow-lg transition-all cursor-pointer flex items-center gap-2">
+        <button id="settingsToggleBtn" onclick="toggleSettings()" class="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-yellow-400/50 text-yellow-400 px-4 py-2 rounded-full font-bold shadow-lg transition-all cursor-pointer flex items-center gap-2">
             ⚙️ <span class="hidden sm:inline">Menü</span>
         </button>
         
-        <div id="settingsPanel" class="hidden bg-black/80 backdrop-blur-xl border border-yellow-500/50 p-5 rounded-2xl shadow-2xl flex-col gap-4 text-sm text-yellow-100 min-w-[220px] modal-enter">
-            <h3 class="font-bold text-yellow-400 border-b border-yellow-500/30 pb-2 mb-1">Einstellungen</h3>
+        <div id="settingsPanel" class="hidden bg-black/90 backdrop-blur-xl border border-yellow-500/50 p-5 rounded-2xl shadow-2xl flex-col gap-4 text-sm text-yellow-100 min-w-[240px] modal-enter">
+            <div class="flex justify-between items-center border-b border-yellow-500/30 pb-2 mb-1">
+                <h3 class="font-bold text-yellow-400 text-lg">Einstellungen</h3>
+                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white text-xl leading-none">&times;</button>
+            </div>
             
             <button id="musicToggleBtn" onclick="toggleMusic()" class="w-full bg-green-700 hover:bg-green-600 text-yellow-400 font-semibold py-2 px-4 rounded-lg transition-colors border border-yellow-400 shadow-sm flex justify-center items-center gap-2">
                 ▶️ Musik abspielen
             </button>
 
             <div class="flex flex-col gap-1 mt-2">
-                <label for="musicVol" class="flex justify-between">Musik Lautstärke</label>
+                <label for="musicVol" class="flex justify-between font-semibold">Musik <span id="musicVolLabel">30%</span></label>
                 <input type="range" id="musicVol" min="0" max="1" step="0.05" value="0.3" class="w-full cursor-pointer">
             </div>
 
             <div class="flex flex-col gap-1 mt-2">
-                <label for="sfxVol" class="flex justify-between">Effekte Lautstärke</label>
+                <label for="sfxVol" class="flex justify-between font-semibold">Effekte <span id="sfxVolLabel">80%</span></label>
                 <input type="range" id="sfxVol" min="0" max="1" step="0.05" value="0.8" class="w-full cursor-pointer">
             </div>
             
@@ -176,49 +185,51 @@
 
     <div class="snow-container" id="snowContainer"></div>
 
-    <div id="loginSection" class="hidden z-20 w-full max-w-md bg-white/10 backdrop-blur-md border border-yellow-500/30 p-8 rounded-2xl shadow-2xl text-center mt-20">
-        <h1 class="title-font text-5xl text-yellow-400 mb-6 drop-shadow-md">Rabsi's Adventskalender</h1>
+    <div id="loginSection" class="hidden z-20 w-full max-w-md bg-black/40 backdrop-blur-md border border-yellow-500/30 p-8 rounded-3xl shadow-2xl text-center mt-20">
+        <h1 class="title-font text-5xl text-yellow-400 mb-6 drop-shadow-md">Rabsi's Kalender</h1>
         <p class="mb-6 text-gray-200">Psst... Es ist noch nicht Dezember! Bitte gib das geheime Passwort ein, um weiterzugehen.</p>
         
         <div class="flex flex-col gap-4">
-            <input type="password" id="passwordInput" placeholder="Passwort" class="px-4 py-3 rounded-lg bg-white/20 border border-yellow-400/50 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-center">
-            <button onclick="checkPassword()" class="bg-red-800 hover:bg-red-700 text-yellow-400 font-semibold py-3 px-6 rounded-lg transition-colors duration-300 border border-yellow-400 shadow-lg">
+            <input type="password" id="passwordInput" placeholder="Passwort" class="px-4 py-3 rounded-xl bg-white/20 border border-yellow-400/50 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-center font-bold tracking-widest">
+            <button onclick="checkPassword()" class="bg-gradient-to-r from-red-800 to-red-700 hover:from-red-700 hover:to-red-600 text-yellow-400 font-bold py-3 px-6 rounded-xl transition-all duration-300 border border-yellow-400 shadow-lg transform hover:scale-[1.02]">
                 Eintreten
             </button>
-            <p id="loginError" class="text-red-400 text-sm hidden mt-2">Falsches Passwort, Liebling! Versuchs nochmal.</p>
+            <p id="loginError" class="text-red-400 text-sm hidden mt-2 font-semibold bg-red-900/50 py-2 rounded-lg border border-red-500/30">Falsches Passwort, Liebling! Versuchs nochmal.</p>
         </div>
     </div>
 
     <div id="calendarSection" class="hidden z-20 w-full max-w-5xl flex-col items-center py-10">
         <h1 class="title-font text-5xl md:text-7xl text-yellow-400 mb-2 drop-shadow-lg text-center">Rabsi's Adventskalender</h1>
-        <p class="text-yellow-100 mb-10 text-center text-lg italic opacity-80">Jeden Tag eine kleine Überraschung für dich ❤️</p>
+        <p class="text-yellow-100 mb-10 text-center text-lg italic opacity-90 drop-shadow-md">Jeden Tag eine kleine Überraschung für dich ❤️</p>
         
-        <div id="calendarGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 w-full px-2">
+        <div id="calendarGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 w-full px-2">
             <!-- Türchen werden dynamisch geladen -->
         </div>
     </div>
 
+    <!-- Modal für zu frühes Klicken -->
     <div id="earlyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-        <div class="bg-red-900 border-2 border-yellow-400 rounded-2xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl modal-enter">
-            <div class="text-5xl mb-4">🙈</div>
-            <h2 class="title-font text-3xl text-yellow-400 mb-4">Halt, Stop!</h2>
+        <div class="bg-red-900 border-2 border-yellow-400 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl modal-enter">
+            <div class="text-6xl mb-4 animate-bounce">🙈</div>
+            <h2 class="title-font text-4xl text-yellow-400 mb-4 drop-shadow-md">Halt, Stop!</h2>
             <p class="text-white mb-6 text-lg">Noch nicht spicken, Rabsi! Dieses Türchen bleibt noch zu.</p>
-            <button onclick="closeEarlyModal()" class="bg-yellow-500 hover:bg-yellow-400 text-red-900 font-bold py-2 px-6 rounded-lg transition-colors w-full">
-                Okay, ich warte brav
+            <button onclick="closeEarlyModal()" class="bg-yellow-400 hover:bg-yellow-300 text-red-900 font-bold py-3 px-6 rounded-xl transition-colors w-full shadow-lg">
+                Okay, ich warte brav 🥺
             </button>
         </div>
     </div>
 
+    <!-- Modal für den Türchen-Inhalt -->
     <div id="messageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-        <div class="bg-white border-4 border-yellow-500 rounded-3xl p-8 max-w-md w-full text-center shadow-[0_0_40px_rgba(251,191,36,0.3)] modal-enter relative">
+        <div class="bg-amber-50 border-4 border-yellow-500 rounded-3xl p-8 max-w-md w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.4)] modal-enter relative">
             <button onclick="closeMessageModal()" class="absolute top-4 right-4 text-gray-400 hover:text-red-800 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
-            <div id="messageEmoji" class="text-6xl mb-4 animate-bounce">❤️</div>
-            <h2 id="messageDay" class="title-font text-4xl text-red-800 mb-2">Tag X</h2>
-            <p id="messageText" class="text-gray-800 text-lg font-medium italic leading-relaxed"></p>
+            <div id="messageEmoji" class="text-7xl mb-6 mt-4">❤️</div>
+            <h2 id="messageDay" class="title-font text-5xl text-red-800 mb-4">Tag X</h2>
+            <p id="messageText" class="text-gray-800 text-xl font-medium italic leading-relaxed mb-4"></p>
         </div>
     </div>
 
@@ -226,6 +237,7 @@
         const CALENDAR_YEAR = 2026;
         const CORRECT_PASSWORD = "Schneezauber#Rabsi2026!";
         let isAuthenticated = false; // Wird beim Reload immer false (Sicherheits-Feature)
+        let audioUnlocked = false; // Flag für die Audio-Entsperrung
         
         const calendarMessages = {
             1: { emoji: "💌", text: "Du bist der wunderbarste Mensch in meinem Leben." },
@@ -264,15 +276,44 @@
         const musicVolSlider = document.getElementById('musicVol');
         const sfxVolSlider = document.getElementById('sfxVol');
         
-        bgMusic.volume = musicVolSlider.value;
-        sfxSuccess.volume = sfxVolSlider.value;
-        sfxError.volume = sfxVolSlider.value;
+        // Initiale Lautstärke
+        function applyVolumes() {
+            bgMusic.volume = musicVolSlider.value;
+            sfxSuccess.volume = sfxVolSlider.value;
+            sfxError.volume = sfxVolSlider.value;
+            document.getElementById('musicVolLabel').innerText = Math.round(musicVolSlider.value * 100) + '%';
+            document.getElementById('sfxVolLabel').innerText = Math.round(sfxVolSlider.value * 100) + '%';
+        }
 
-        musicVolSlider.addEventListener('input', (e) => bgMusic.volume = e.target.value);
-        sfxVolSlider.addEventListener('input', (e) => {
-            sfxSuccess.volume = e.target.value;
-            sfxError.volume = e.target.value;
-        });
+        applyVolumes();
+
+        musicVolSlider.addEventListener('input', applyVolumes);
+        sfxVolSlider.addEventListener('input', applyVolumes);
+
+        // --- AUDIO UNLOCKER ---
+        // Stellt sicher, dass das Audio im Browser beim ersten Klick entsperrt wird.
+        function unlockAudioContext() {
+            if (audioUnlocked) return;
+            // Versuche alle Audios stumm und kurz anzuspielen, um sie im Browser freizugeben
+            [bgMusic, sfxSuccess, sfxError].forEach(audio => {
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }).catch(() => { /* Autoplay blockiert Fehler beim ersten unsichtbaren Abspielen ignorieren */ });
+                }
+            });
+            audioUnlocked = true;
+            // Event Listener nach dem ersten Mal entfernen
+            document.removeEventListener('click', unlockAudioContext);
+            document.removeEventListener('touchstart', unlockAudioContext);
+        }
+
+        // Auf erste Nutzerinteraktion lauschen, um Audio zu erlauben
+        document.addEventListener('click', unlockAudioContext, { once: true });
+        document.addEventListener('touchstart', unlockAudioContext, { once: true });
+        // ----------------------
 
         function toggleSettings() {
             const panel = document.getElementById('settingsPanel');
@@ -304,14 +345,12 @@
             }
         }
 
-        function playSuccessChime() {
-            sfxSuccess.currentTime = 0;
-            sfxSuccess.play().catch(e => console.log("SFX Error:", e));
-        }
-
-        function playErrorSound() {
-            sfxError.currentTime = 0;
-            sfxError.play().catch(e => console.log("SFX Error:", e));
+        function playSound(audioEl) {
+            audioEl.currentTime = 0;
+            const playPromise = audioEl.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => console.warn("SFX Error:", e));
+            }
         }
 
         function resetProgress() {
@@ -319,20 +358,19 @@
             localStorage.removeItem('rabsi_opened_doors');
             openedDoors = [];
             
-            // UI aktualisieren (Klassen entfernen)
+            // UI aktualisieren
             document.querySelectorAll('.door').forEach(door => {
                 door.classList.remove('open');
             });
             
-            // Bestätigungs-Ton
-            playErrorSound(); 
+            playSound(sfxError); // Ein kurzes Sound-Feedback als Bestätigung
             toggleSettings(); // Menü schließen
         }
 
         function initApp() {
             createSnowflakes();
             const today = new Date();
-            const dec1st = new Date(CALENDAR_YEAR, 11, 1);
+            const dec1st = new Date(CALENDAR_YEAR, 11, 1); // Monat 11 ist Dezember (0-indexiert)
 
             if (today < dec1st) {
                 document.getElementById('loginSection').classList.remove('hidden');
@@ -350,17 +388,18 @@
                 errorMsg.classList.add('hidden');
                 document.getElementById('loginSection').classList.add('hidden');
                 
-                // Audio direkt beim Klick starten (umgeht Autoplay-Blockaden)
+                // Hintergrundmusik beim erfolgreichen Login (aktiver Klick) abspielen
                 if(bgMusic.paused) toggleMusic();
                 
                 showCalendar();
             } else {
                 errorMsg.classList.remove('hidden');
                 document.getElementById('passwordInput').value = '';
-                playErrorSound();
+                playSound(sfxError);
             }
         }
 
+        // Ermöglicht Login per Enter-Taste
         document.getElementById('passwordInput')?.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') checkPassword();
         });
@@ -384,8 +423,8 @@
                         <div class="door-front">
                             ${dayNumber}
                         </div>
-                        <div class="door-back">
-                            <span class="text-3xl">${calendarMessages[dayNumber].emoji}</span>
+                        <div class="door-back flex items-center justify-center">
+                            <span class="text-4xl">${calendarMessages[dayNumber].emoji}</span>
                         </div>
                     </div>
                 `;
@@ -400,7 +439,7 @@
             if (isAuthenticated || today >= unlockDate) {
                 openDoor(dayNumber);
             } else {
-                playErrorSound();
+                playSound(sfxError);
                 showEarlyModal();
             }
         }
@@ -408,18 +447,21 @@
         function openDoor(dayNumber) {
             const doorElement = document.getElementById(`door-${dayNumber}`);
             
+            // Bereits offene Tür -> Nur Text nochmal anzeigen
             if (openedDoors.includes(dayNumber)) {
-                playSuccessChime();
+                playSound(sfxSuccess);
                 showMessageModal(dayNumber);
                 return;
             }
 
+            // Neue Tür öffnen
             doorElement.classList.add('open');
-            playSuccessChime();
+            playSound(sfxSuccess);
             
             openedDoors.push(dayNumber);
             localStorage.setItem('rabsi_opened_doors', JSON.stringify(openedDoors));
 
+            // Warten bis die Flip-Animation fast fertig ist, um die Botschaft zu zeigen
             setTimeout(() => {
                 showMessageModal(dayNumber);
             }, 600);
@@ -435,7 +477,7 @@
 
         function showMessageModal(dayNumber) {
             const data = calendarMessages[dayNumber];
-            document.getElementById('messageDay').innerText = `Tag ${dayNumber}`;
+            document.getElementById('messageDay').innerText = `Türchen ${dayNumber}`;
             document.getElementById('messageText').innerText = data.text;
             document.getElementById('messageEmoji').innerText = data.emoji;
             document.getElementById('messageModal').classList.remove('hidden');
@@ -448,21 +490,23 @@
         function createSnowflakes() {
             const container = document.getElementById('snowContainer');
             const snowflakeChars = ['❄', '❅', '❆'];
+            // Anzahl an die Bildschirmbreite anpassen (Performance)
+            const count = window.innerWidth < 600 ? 25 : 50;
             
-            for (let i = 0; i < 40; i++) {
+            for (let i = 0; i < count; i++) {
                 const flake = document.createElement('div');
                 flake.className = 'snowflake';
                 flake.innerText = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
                 
                 const startLeft = Math.random() * 100;
-                const animationDuration = 5 + Math.random() * 10;
+                const animationDuration = 6 + Math.random() * 9; // 6s - 15s
                 const animationDelay = Math.random() * 10;
-                const opacity = 0.3 + Math.random() * 0.7;
-                const size = 0.5 + Math.random() * 1.5;
+                const opacity = 0.2 + Math.random() * 0.6;
+                const size = 0.8 + Math.random() * 1.2;
                 
                 flake.style.left = `${startLeft}vw`;
                 flake.style.animationDuration = `${animationDuration}s`;
-                flake.style.animationDelay = `${animationDelay}s`;
+                flake.style.animationDelay = `-${animationDelay}s`; // Negativer Delay für sofortigen Bildschirm-Schnee
                 flake.style.opacity = opacity;
                 flake.style.fontSize = `${size}em`;
                 
