@@ -6,24 +6,21 @@
     <title>Rabsi's Adventskalender</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-    
+
     <style>
         body {
             font-family: 'Nunito', sans-serif;
-            background-color: #064e3b; /* Tannengrün */
+            background-color: #064e3b;
             background-image: radial-gradient(circle at top, #064e3b, #022c22);
             color: #fef3c7;
             min-height: 100vh;
             overflow-x: hidden;
             margin: 0;
-            -webkit-tap-highlight-color: transparent; /* Entfernt das blaue Flackern auf Mobile */
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .title-font {
-            font-family: 'Dancing Script', cursive;
-        }
+        .title-font { font-family: 'Dancing Script', cursive; }
 
-        /* Schneeflocken-Effekt */
         .snow-container {
             position: fixed;
             top: 0;
@@ -48,23 +45,18 @@
             100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
         }
 
-        .door-container {
-            perspective: 1000px;
-            z-index: 10;
-        }
+        .door-container { perspective: 1000px; z-index: 10; }
 
         .door {
             width: 100%;
             aspect-ratio: 1 / 1;
             position: relative;
-            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bounce-Effekt beim Öffnen */
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
             transform-style: preserve-3d;
             cursor: pointer;
         }
 
-        .door.open {
-            transform: rotateY(180deg);
-        }
+        .door.open { transform: rotateY(180deg); }
 
         .door-front, .door-back {
             position: absolute;
@@ -79,17 +71,15 @@
         }
 
         .door-front {
-            background: linear-gradient(135deg, #7f1d1d, #991b1b); /* Dunkelrot */
-            border: 2px solid #fbbf24; /* Gold */
+            background: linear-gradient(135deg, #7f1d1d, #991b1b);
+            border: 2px solid #fbbf24;
             color: #fbbf24;
             font-size: 2rem;
             font-weight: bold;
             transition: filter 0.3s;
         }
 
-        .door:hover .door-front {
-            filter: brightness(1.1);
-        }
+        .door:hover .door-front { filter: brightness(1.1); }
 
         .door-front::before {
             content: '';
@@ -101,7 +91,7 @@
         }
 
         .door-back {
-            background-color: #fef3c7; /* Helles Creme */
+            background-color: #fef3c7;
             color: #7f1d1d;
             transform: rotateY(180deg);
             padding: 0.5rem;
@@ -118,7 +108,7 @@
             color: #7f1d1d;
             border-color: #fef3c7;
         }
-        
+
         .door-24 .door-front::before {
             border-color: rgba(127, 29, 29, 0.5);
         }
@@ -126,26 +116,26 @@
         .modal-enter {
             animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
-        
+
         @keyframes popIn {
             0% { transform: scale(0.8); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
 
-        input[type=range] {
-            accent-color: #fbbf24;
-        }
+        input[type=range] { accent-color: #fbbf24; }
     </style>
 </head>
+
 <body class="relative flex flex-col items-center justify-center p-4">
 
-    <!-- Verlässliche MP3/WAV-Links von Wikimedia Commons -->
     <audio id="bgMusic" loop preload="auto">
         <source src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Jingle_Bells_3.ogg" type="audio/ogg">
     </audio>
+
     <audio id="sfxSuccess" preload="auto">
         <source src="https://upload.wikimedia.org/wikipedia/commons/b/b5/133003__kyster__bell-ding.wav" type="audio/wav">
     </audio>
+
     <audio id="sfxError" preload="auto">
         <source src="https://upload.wikimedia.org/wikipedia/commons/4/41/Error_beep.ogg" type="audio/ogg">
     </audio>
@@ -154,13 +144,13 @@
         <button id="settingsToggleBtn" onclick="toggleSettings()" class="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-yellow-400/50 text-yellow-400 px-4 py-2 rounded-full font-bold shadow-lg transition-all cursor-pointer flex items-center gap-2">
             ⚙️ <span class="hidden sm:inline">Menü</span>
         </button>
-        
+
         <div id="settingsPanel" class="hidden bg-black/90 backdrop-blur-xl border border-yellow-500/50 p-5 rounded-2xl shadow-2xl flex-col gap-4 text-sm text-yellow-100 min-w-[240px] modal-enter">
             <div class="flex justify-between items-center border-b border-yellow-500/30 pb-2 mb-1">
                 <h3 class="font-bold text-yellow-400 text-lg">Einstellungen</h3>
                 <button onclick="toggleSettings()" class="text-gray-400 hover:text-white text-xl leading-none">&times;</button>
             </div>
-            
+
             <button id="musicToggleBtn" onclick="toggleMusic()" class="w-full bg-green-700 hover:bg-green-600 text-yellow-400 font-semibold py-2 px-4 rounded-lg transition-colors border border-yellow-400 shadow-sm flex justify-center items-center gap-2">
                 ▶️ Musik abspielen
             </button>
@@ -174,7 +164,7 @@
                 <label for="sfxVol" class="flex justify-between font-semibold">Effekte <span id="sfxVolLabel">80%</span></label>
                 <input type="range" id="sfxVol" min="0" max="1" step="0.05" value="0.8" class="w-full cursor-pointer">
             </div>
-            
+
             <div class="border-t border-yellow-500/30 pt-4 mt-2">
                 <button onclick="resetProgress()" class="w-full bg-red-800 hover:bg-red-700 text-yellow-400 font-semibold py-2 px-4 rounded-lg transition-colors border border-yellow-400/50 shadow-sm flex justify-center items-center gap-2">
                     🔄 Lokalen Fortschritt zurücksetzen
@@ -188,10 +178,12 @@
     <div id="loginSection" class="z-20 w-full max-w-md bg-black/40 backdrop-blur-md border border-yellow-500/30 p-8 rounded-3xl shadow-2xl text-center mt-20">
         <h1 class="title-font text-5xl text-yellow-400 mb-6 drop-shadow-md">Rabsi's Kalender</h1>
         <p class="mb-6 text-gray-200">Ein kleiner Weihnachtszauber ist nur für uns beide bestimmt. Melde dich bitte mit deinem Google-Konto an. ❤️</p>
+
         <div class="flex flex-col gap-4">
             <button id="googleLoginBtn" type="button" class="bg-gradient-to-r from-red-800 to-red-700 hover:from-red-700 hover:to-red-600 text-yellow-400 font-bold py-3 px-6 rounded-xl transition-all duration-300 border border-yellow-400 shadow-lg transform hover:scale-[1.02]">
                 <span class="mr-2">G</span> Mit Google anmelden
             </button>
+
             <p id="loginStatus" role="status" aria-live="polite" class="text-yellow-100 text-sm"></p>
             <button id="logoutBtn" type="button" class="hidden text-sm text-yellow-200 underline">Abmelden</button>
         </div>
@@ -200,13 +192,10 @@
     <div id="calendarSection" class="hidden z-20 w-full max-w-5xl flex-col items-center py-10">
         <h1 class="title-font text-5xl md:text-7xl text-yellow-400 mb-2 drop-shadow-lg text-center">Rabsi's Adventskalender</h1>
         <p class="text-yellow-100 mb-10 text-center text-lg italic opacity-90 drop-shadow-md">Jeden Tag eine kleine Überraschung für dich ❤️</p>
-        
-        <div id="calendarGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 w-full px-2">
-            <!-- Türchen werden dynamisch geladen -->
-        </div>
+
+        <div id="calendarGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 w-full px-2"></div>
     </div>
 
-    <!-- Modal für zu frühes Klicken -->
     <div id="earlyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
         <div class="bg-red-900 border-2 border-yellow-400 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl modal-enter">
             <div class="text-6xl mb-4 animate-bounce">🙈</div>
@@ -218,7 +207,6 @@
         </div>
     </div>
 
-    <!-- Modal für den Türchen-Inhalt -->
     <div id="messageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
         <div class="bg-amber-50 border-4 border-yellow-500 rounded-3xl p-8 max-w-md w-full text-center shadow-[0_0_50px_rgba(251,191,36,0.4)] modal-enter relative">
             <button onclick="closeMessageModal()" class="absolute top-4 right-4 text-gray-400 hover:text-red-800 transition-colors">
@@ -234,6 +222,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+
     <script>
         const CALENDAR_YEAR = 2026;
         let isAuthenticated = false;
@@ -250,15 +239,15 @@
             measurementId: "G-Z69Q2Z1SBG"
         };
 
-        // UI-Zuordnung; Firestore-/Serverregeln müssen Berechtigungen separat erzwingen.
         const ADMIN_EMAIL = "finn.rogozinskizwei@gmail.com".toLowerCase();
         const PLAYER_EMAIL = "stolzra08@gmail.com".toLowerCase();
 
         firebase.initializeApp(firebaseConfig);
+
         const auth = firebase.auth();
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         googleProvider.setCustomParameters({ prompt: "select_account" });
-        
+
         const calendarMessages = {
             1: { emoji: "💌", text: "Du bist der wunderbarste Mensch in meinem Leben." },
             2: { emoji: "✨", text: "Dein Lächeln verzaubert jeden meiner Tage." },
@@ -292,11 +281,9 @@
         const bgMusic = document.getElementById('bgMusic');
         const sfxSuccess = document.getElementById('sfxSuccess');
         const sfxError = document.getElementById('sfxError');
-        
         const musicVolSlider = document.getElementById('musicVol');
         const sfxVolSlider = document.getElementById('sfxVol');
-        
-        // Initiale Lautstärke
+
         function applyVolumes() {
             bgMusic.volume = musicVolSlider.value;
             sfxSuccess.volume = sfxVolSlider.value;
@@ -306,34 +293,29 @@
         }
 
         applyVolumes();
-
         musicVolSlider.addEventListener('input', applyVolumes);
         sfxVolSlider.addEventListener('input', applyVolumes);
 
-        // --- AUDIO UNLOCKER ---
-        // Stellt sicher, dass das Audio im Browser beim ersten Klick entsperrt wird.
         function unlockAudioContext() {
             if (audioUnlocked) return;
-            // Versuche alle Audios stumm und kurz anzuspielen, um sie im Browser freizugeben
+
             [bgMusic, sfxSuccess, sfxError].forEach(audio => {
                 const playPromise = audio.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
                         audio.pause();
                         audio.currentTime = 0;
-                    }).catch(() => { /* Autoplay blockiert Fehler beim ersten unsichtbaren Abspielen ignorieren */ });
+                    }).catch(() => {});
                 }
             });
+
             audioUnlocked = true;
-            // Event Listener nach dem ersten Mal entfernen
             document.removeEventListener('click', unlockAudioContext);
             document.removeEventListener('touchstart', unlockAudioContext);
         }
 
-        // Auf erste Nutzerinteraktion lauschen, um Audio zu erlauben
         document.addEventListener('click', unlockAudioContext, { once: true });
         document.addEventListener('touchstart', unlockAudioContext, { once: true });
-        // ----------------------
 
         function toggleSettings() {
             const panel = document.getElementById('settingsPanel');
@@ -343,6 +325,7 @@
 
         function updateMusicButtonUI(isPlaying) {
             const btn = document.getElementById('musicToggleBtn');
+
             if (isPlaying) {
                 btn.innerHTML = '⏸️ Musik pausieren';
                 btn.classList.replace('bg-green-700', 'bg-red-800');
@@ -358,7 +341,7 @@
             if (bgMusic.paused) {
                 bgMusic.play()
                     .then(() => updateMusicButtonUI(true))
-                    .catch(e => console.log("Audio Play blockiert:", e));
+                    .catch(error => console.log("Audio Play blockiert:", error));
             } else {
                 bgMusic.pause();
                 updateMusicButtonUI(false);
@@ -368,33 +351,31 @@
         function playSound(audioEl) {
             audioEl.currentTime = 0;
             const playPromise = audioEl.play();
+
             if (playPromise !== undefined) {
-                playPromise.catch(e => console.warn("SFX Error:", e));
+                playPromise.catch(error => console.warn("SFX Error:", error));
             }
         }
 
         function resetProgress() {
-            // Aktuell wird nur der lokale Browser-Fortschritt zurückgesetzt.
-            // Firestore-Synchronisierung folgt in einem späteren Schritt.
             localStorage.removeItem('rabsi_opened_doors');
             openedDoors = [];
-            
-            // UI aktualisieren
+
             document.querySelectorAll('.door').forEach(door => {
                 door.classList.remove('open');
             });
-            
-            playSound(sfxError); // Ein kurzes Sound-Feedback als Bestätigung
-            toggleSettings(); // Menü schließen
+
+            playSound(sfxError);
+            toggleSettings();
         }
 
         function initApp() {
             createSnowflakes();
-            document.getElementById('loginSection').classList.remove('hidden');
+
             document.getElementById('googleLoginBtn').addEventListener('click', signInWithGoogle);
             document.getElementById('logoutBtn').addEventListener('click', signOutUser);
 
-            auth.onAuthStateChanged(async (user) => {
+            auth.onAuthStateChanged(async user => {
                 if (!user) {
                     currentUser = null;
                     isAuthenticated = false;
@@ -407,6 +388,7 @@
                 }
 
                 const email = (user.email || '').toLowerCase();
+
                 if (email !== ADMIN_EMAIL && email !== PLAYER_EMAIL) {
                     await auth.signOut();
                     document.getElementById('loginStatus').textContent =
@@ -425,19 +407,16 @@
         async function signInWithGoogle() {
             const status = document.getElementById('loginStatus');
             const button = document.getElementById('googleLoginBtn');
+
             status.textContent = 'Google-Anmeldung wird geöffnet …';
             button.disabled = true;
+
             try {
                 await auth.signInWithPopup(googleProvider);
             } catch (error) {
                 console.error('Google-Anmeldung fehlgeschlagen:', error);
-                if (error.code === 'auth/popup-closed-by-user') {
-                    status.textContent = 'Anmeldung abgebrochen. Du kannst es erneut versuchen.';
-                } else if (error.code === 'auth/unauthorized-domain') {
-                    status.textContent = 'Diese Website-Domain ist in Firebase noch nicht autorisiert.';
-                } else {
-                    status.textContent = 'Anmeldung fehlgeschlagen. Prüfe die Google-Anmeldung in Firebase und versuche es erneut.';
-                }
+                status.textContent = 'Fehler: ' + (error.code || 'unbekannt') +
+                    ' – ' + (error.message || 'Keine weitere Beschreibung');
             } finally {
                 button.disabled = false;
             }
@@ -448,34 +427,36 @@
                 await auth.signOut();
             } catch (error) {
                 console.error('Abmelden fehlgeschlagen:', error);
-                document.getElementById('loginStatus').textContent = 'Abmelden war nicht möglich. Bitte erneut versuchen.';
+                document.getElementById('loginStatus').textContent =
+                    'Abmelden war nicht möglich. Bitte erneut versuchen.';
             }
         }
 
         function showCalendar() {
+            if (!currentUser || !isAuthenticated) return;
+
             document.getElementById('calendarSection').classList.remove('hidden');
             document.getElementById('calendarSection').classList.add('flex');
-            
+
             const grid = document.getElementById('calendarGrid');
             grid.innerHTML = '';
 
             doorLayout.forEach(dayNumber => {
                 const doorDiv = document.createElement('div');
                 doorDiv.className = 'door-container';
-                
+
                 const isOpened = openedDoors.includes(dayNumber);
                 const extraClass = dayNumber === 24 ? 'door-24' : '';
-                
+
                 doorDiv.innerHTML = `
                     <div class="door ${isOpened ? 'open' : ''} ${extraClass}" id="door-${dayNumber}" onclick="handleDoorClick(${dayNumber})">
-                        <div class="door-front">
-                            ${dayNumber}
-                        </div>
+                        <div class="door-front">${dayNumber}</div>
                         <div class="door-back flex items-center justify-center">
                             <span class="text-4xl">${calendarMessages[dayNumber].emoji}</span>
                         </div>
                     </div>
                 `;
+
                 grid.appendChild(doorDiv);
             });
         }
@@ -483,7 +464,7 @@
         function handleDoorClick(dayNumber) {
             const today = new Date();
             const unlockDate = new Date(CALENDAR_YEAR, 11, dayNumber);
-            
+
             if (isAuthenticated && today >= unlockDate) {
                 openDoor(dayNumber);
             } else {
@@ -494,25 +475,20 @@
 
         function openDoor(dayNumber) {
             const doorElement = document.getElementById(`door-${dayNumber}`);
-            
-            // Bereits offene Tür -> Nur Text nochmal anzeigen
+
             if (openedDoors.includes(dayNumber)) {
                 playSound(sfxSuccess);
                 showMessageModal(dayNumber);
                 return;
             }
 
-            // Neue Tür öffnen
             doorElement.classList.add('open');
             playSound(sfxSuccess);
-            
+
             openedDoors.push(dayNumber);
             localStorage.setItem('rabsi_opened_doors', JSON.stringify(openedDoors));
 
-            // Warten bis die Flip-Animation fast fertig ist, um die Botschaft zu zeigen
-            setTimeout(() => {
-                showMessageModal(dayNumber);
-            }, 600);
+            setTimeout(() => showMessageModal(dayNumber), 600);
         }
 
         function showEarlyModal() {
@@ -538,26 +514,19 @@
         function createSnowflakes() {
             const container = document.getElementById('snowContainer');
             const snowflakeChars = ['❄', '❅', '❆'];
-            // Anzahl an die Bildschirmbreite anpassen (Performance)
             const count = window.innerWidth < 600 ? 25 : 50;
-            
+
             for (let i = 0; i < count; i++) {
                 const flake = document.createElement('div');
                 flake.className = 'snowflake';
                 flake.innerText = snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)];
-                
-                const startLeft = Math.random() * 100;
-                const animationDuration = 6 + Math.random() * 9; // 6s - 15s
-                const animationDelay = Math.random() * 10;
-                const opacity = 0.2 + Math.random() * 0.6;
-                const size = 0.8 + Math.random() * 1.2;
-                
-                flake.style.left = `${startLeft}vw`;
-                flake.style.animationDuration = `${animationDuration}s`;
-                flake.style.animationDelay = `-${animationDelay}s`; // Negativer Delay für sofortigen Bildschirm-Schnee
-                flake.style.opacity = opacity;
-                flake.style.fontSize = `${size}em`;
-                
+
+                flake.style.left = `${Math.random() * 100}vw`;
+                flake.style.animationDuration = `${6 + Math.random() * 9}s`;
+                flake.style.animationDelay = `${-Math.random() * 10}s`;
+                flake.style.opacity = 0.2 + Math.random() * 0.6;
+                flake.style.fontSize = `${0.8 + Math.random() * 1.2}em`;
+
                 container.appendChild(flake);
             }
         }
